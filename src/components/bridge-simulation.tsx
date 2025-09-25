@@ -132,8 +132,8 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                 <Slider
                   value={[knownR]}
                   onValueChange={(vals) => onKnownRChange(vals[0])}
-                  min={isFindXMode ? 1 : 0.1}
-                  max={isFindXMode ? 20 : 2}
+                  min={0.0}
+                  max={20.0}
                   step={0.1}
                   className="flex-1"
                 />
@@ -142,8 +142,8 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                   value={knownR.toFixed(1)}
                   onChange={(e) => onKnownRChange(parseFloat(e.target.value) || 0)}
                   className="w-24 text-center"
-                  min={isFindXMode ? 1 : 0.1}
-                  max={isFindXMode ? 20 : 2}
+                  min={0.0}
+                  max={20.0}
                   step={0.1}
                 />
                 <span className="text-sm font-medium">Ω</span>
