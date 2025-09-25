@@ -199,7 +199,6 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                   style={{ left: `${jockeyPos}%`, transform: 'translateX(-50%)' }}
                   onMouseDown={() => setIsDragging(true)}
                 >
-                  <div className="w-px h-full bg-accent-foreground/50" />
                 </div>
                 {/* Connection to Galvanometer */}
                 <div className="absolute" style={{ left: `${jockeyPos}%`, top: '-48px', height: '54px', width: '1px' }}>
