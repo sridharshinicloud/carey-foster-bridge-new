@@ -1,19 +1,21 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
+import type { ExperimentMode } from '@/app/page';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Zap, MoveHorizontal, Save, RefreshCw, AlertCircle, HelpCircle, GitCommitHorizontal, Settings, Repeat } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Zap, Save, RefreshCw, AlertCircle, HelpCircle, GitCommitHorizontal, Settings, Repeat, Sigma } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
+
 
 interface ResistanceBoxProps {
     label: string;
     value: string | number;
-    isInput?: boolean;
-    onValueChange?: (value: number) => void;
     Icon: React.ElementType;
     position: 'left' | 'right' | 'inner-left' | 'inner-right';
 }
@@ -48,10 +50,12 @@ interface BridgeSimulationProps {
   onSwap: () => void;
   P: number;
   Q: number;
+  experimentMode: ExperimentMode;
+  onModeChange: (mode: ExperimentMode) => void;
 }
 
 const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
-  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced, isSwapped, onSwap, P, Q
+  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced, isSwapped, onSwap, P, Q, experimentMode, onModeChange
 }) => {
   const wireRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -82,13 +86,28 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
   
   const needleRotation = Math.max(-45, Math.min(45, potentialDifference * 450));
 
+  const rBoxLabel = isSwapped ? "X" : "R";
+  const xBoxLabel = isSwapped ? "R" : "X";
+
+  const isFindXMode = experimentMode === 'findX';
+
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="font-headline">Experiment Setup</CardTitle>
-        <CardDescription>Adjust the known resistance, swap R and X, and slide the jockey to find the balance points.</CardDescription>
+        <CardDescription>Select an experiment, adjust the known resistance, and slide the jockey to find the balance points.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
+        <div className="flex items-center space-x-2">
+            <Label htmlFor="mode-switch">Find Unknown Resistance (X)</Label>
+            <Switch
+                id="mode-switch"
+                checked={!isFindXMode}
+                onCheckedChange={(checked) => onModeChange(checked ? 'findRho' : 'findX')}
+            />
+            <Label htmlFor="mode-switch">Find Resistance/Length (ρ)</Label>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
             <div className="space-y-3">
               <TooltipProvider>
@@ -99,7 +118,13 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                       <AlertCircle className="w-4 h-4 text-muted-foreground" />
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent><p>This is the standard resistor. Adjust it to be close to the unknown resistance.</p></TooltipContent>
+                  <TooltipContent>
+                    <p>
+                      {isFindXMode
+                        ? "Adjust the standard resistor to be close to the unknown resistance."
+                        : "Use a small resistance (e.g., 0.1 Ω) for this experiment."}
+                    </p>
+                  </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
@@ -107,25 +132,25 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                 <Slider
                   value={[knownR]}
                   onValueChange={(vals) => onKnownRChange(vals[0])}
-                  min={1}
-                  max={20}
+                  min={isFindXMode ? 1 : 0.1}
+                  max={isFindXMode ? 20 : 2}
                   step={0.1}
                   className="flex-1"
                 />
                 <Input
                   type="number"
                   value={knownR.toFixed(1)}
-                  onChange={(e) => onKnownRChange(Math.max(1, Math.min(20, parseFloat(e.target.value) || 0)))}
+                  onChange={(e) => onKnownRChange(parseFloat(e.target.value) || 0)}
                   className="w-24 text-center"
-                  min={1}
-                  max={20}
+                  min={isFindXMode ? 1 : 0.1}
+                  max={isFindXMode ? 20 : 2}
                   step={0.1}
                 />
                 <span className="text-sm font-medium">Ω</span>
               </div>
             </div>
             <Button onClick={onSwap} variant="outline">
-                <Repeat className="mr-2 h-4 w-4" /> Swap R and X
+                <Repeat className="mr-2 h-4 w-4" /> Swap Gaps
             </Button>
         </div>
 
@@ -134,11 +159,11 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
           <div className="relative aspect-video w-full rounded-lg bg-muted/30 border-2 border-dashed p-4 flex flex-col justify-end">
             
             {/* Resistors */}
-            <ResistanceBox label={isSwapped ? "X" : "R"} value={isSwapped ? "?" : knownR} Icon={isSwapped ? HelpCircle : Zap} position="left" />
-            <ResistanceBox label={isSwapped ? "R" : "X"} value={isSwapped ? knownR : "?"} Icon={isSwapped ? Zap : HelpCircle} position="right" />
+            <ResistanceBox label={isFindXMode ? rBoxLabel : (isSwapped ? "Copper Strip" : "R")} value={isSwapped ? (isFindXMode ? '?' : knownR) : knownR} Icon={isFindXMode ? (isSwapped ? HelpCircle : Zap) : Zap} position="left" />
+            <ResistanceBox label={isFindXMode ? xBoxLabel : (isSwapped ? "R" : "Copper Strip")} value={isSwapped ? knownR : (isFindXMode ? '?' : '0.0 Ω')} Icon={isFindXMode ? (isSwapped ? Zap : HelpCircle) : Sigma} position="right" />
             <ResistanceBox label="P" value={P} Icon={Settings} position="inner-left" />
             <ResistanceBox label="Q" value={Q} Icon={Settings} position="inner-right" />
-            
+
             {/* Wires */}
             <div className="absolute top-8 left-1/2 -translate-x-1/2 w-48 h-20">
                 <svg width="100%" height="100%" viewBox="0 0 192 80" className="overflow-visible">
@@ -217,7 +242,7 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                 </svg>
               </div>
             <CardTitle className={cn("font-mono transition-colors text-sm -mt-3", isBalanced ? "text-green-600 dark:text-green-400" : "")}>
-              {isBalanced ? 'Balanced' : 'Unbalanced'}
+              {isBalanced ? 'Balanced' : 'Balanced'}
             </CardTitle>
           </Card>
           <div className="flex flex-col gap-4 justify-center">

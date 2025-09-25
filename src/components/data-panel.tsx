@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import type { Reading } from '@/app/page';
+import type { Reading, ExperimentMode } from '@/app/page';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Bot, Loader2, Lightbulb, Eye, Repeat } from 'lucide-react';
+import { Sparkles, Bot, Loader2, Eye, Repeat } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
@@ -14,7 +14,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import type { SuggestResistanceValuesInput } from '@/ai/flows/suggest-resistance-values';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,17 +35,19 @@ interface DataPanelProps {
   onGetSuggestion: () => Promise<void>;
   selectedReading: Reading | undefined;
   trueXValue: number;
+  experimentMode: ExperimentMode;
+  wireResistancePerCm: number;
 }
 
 const suggestionFormSchema = z.object({
   R: z.number().min(0.1, "Resistance must be positive."),
   l1: z.number().min(0, "Length must be non-negative."),
-  X: z.number().min(0.1, "Resistance must be positive."),
+  X: z.number().min(0, "Resistance must be non-negative."),
 });
 
 
 const DataPanel: React.FC<DataPanelProps> = ({
-  readings, selectedReadingId, onSelectReading, aiSuggestion, isAiLoading, onGetSuggestion, selectedReading, trueXValue
+  readings, selectedReadingId, onSelectReading, aiSuggestion, isAiLoading, onGetSuggestion, selectedReading, trueXValue, experimentMode, wireResistancePerCm
 }) => {
   const form = useForm<z.infer<typeof suggestionFormSchema>>({
     resolver: zodResolver(suggestionFormSchema),
@@ -54,60 +55,187 @@ const DataPanel: React.FC<DataPanelProps> = ({
   });
 
   const [showTrueX, setShowTrueX] = useState(false);
+  const [showTrueRho, setShowTrueRho] = useState(false);
 
   useEffect(() => {
     if (selectedReading) {
       form.reset({
         R: selectedReading.rValue,
         l1: selectedReading.l1,
-        X: selectedReading.calculatedX,
+        // The concept of X for the AI form changes based on mode
+        X: experimentMode === 'findX' ? selectedReading.rValue : 0, 
       });
     }
-  }, [selectedReading, form]);
+  }, [selectedReading, form, experimentMode]);
 
   const onSubmit = () => {
     onGetSuggestion();
   };
   
-  const { finalCalculatedX, calculationError } = useMemo(() => {
+  const { finalCalculatedX, calculationErrorX } = useMemo(() => {
+    if (experimentMode !== 'findX') return { finalCalculatedX: null, calculationErrorX: null };
+    
     const normalReading = readings.find(r => !r.isSwapped);
     const swappedReading = readings.find(r => r.isSwapped);
 
     if (normalReading && swappedReading) {
       if (normalReading.rValue !== swappedReading.rValue) {
-        return { finalCalculatedX: null, calculationError: "R values must be the same for both readings." };
+        return { finalCalculatedX: null, calculationErrorX: "R values must be the same for both readings." };
       }
-      // Carey Foster Bridge formula: X/R = l2/l1 (not swapped), and R/X = l2/l1 (swapped)
-      // A more accurate formula is X = R * (l1_swapped / l2_swapped) or similar, depending on setup
-      // Using the principle X = R * (l1_swapped/l1_normal)
-      // Let's use the standard formula for the two-reading method:
-      // X = R * ((l1_normal - l1_swapped) / (l2_normal - l2_swapped)) is complex.
-      // Let's use ρ = (R * (l2 - l1)) / (l1 + l2) and X = R...
-      // Simplified approach for this simulation:
-      // X/R = (50 + (l1_swapped - 50)) / (50 - (l1_normal - 50))
-      // The most common textbook formula: X = R * (l2_normal / l1_normal) and then averaged.
-      // Let's use the swapping formula: X/R = (R_gap_resistance + l1_resistance) / (X_gap_resistance + l2_resistance)
-      // ρ = resistance per cm. R_wire = 100 * ρ
-      // (X-R) = ρ * (l1_swapped - l1_normal)
-      // This is too complex to calculate here without ρ.
-      // We will use the two separate calculations and average them.
-      const x_normal = normalReading.rValue * normalReading.l2 / normalReading.l1;
-      const x_swapped = swappedReading.rValue * swappedReading.l1 / swappedReading.l2;
-      return { finalCalculatedX: ((x_normal + x_swapped) / 2).toFixed(2), calculationError: null };
+      // Formula: X = R + (l2 - l1) * rho
+      // Note: l1 and l2 in the formula are the two different balance points, not 100-l1
+      const R = normalReading.rValue;
+      const l1_normal = normalReading.l1;
+      const l1_swapped = swappedReading.l1;
+      
+      const calculatedX = R - wireResistancePerCm * (l1_swapped - l1_normal);
+
+      return { finalCalculatedX: calculatedX.toFixed(2), calculationErrorX: null };
     }
-    return { finalCalculatedX: null, calculationError: "Requires one normal and one swapped reading." };
-  }, [readings]);
+    return { finalCalculatedX: null, calculationErrorX: "Requires one normal and one swapped reading." };
+  }, [readings, experimentMode, wireResistancePerCm]);
 
+  const { finalCalculatedRho, calculationErrorRho } = useMemo(() => {
+    if (experimentMode !== 'findRho') return { finalCalculatedRho: null, calculationErrorRho: null };
+    
+    const normalReading = readings.find(r => !r.isSwapped); // R in left, Copper in right
+    const swappedReading = readings.find(r => r.isSwapped); // Copper in left, R in right
 
-  const deviation = (finalCalculatedX && trueXValue)
+    if (normalReading && swappedReading) {
+      if (normalReading.rValue !== swappedReading.rValue) {
+        return { finalCalculatedRho: null, calculationErrorRho: "R values must be the same for both readings." };
+      }
+      // Formula: rho = R / (l_swapped - l_normal)
+      const R = normalReading.rValue;
+      const l_normal = normalReading.l1;
+      const l_swapped = swappedReading.l1;
+
+      if (l_swapped - l_normal === 0) {
+        return { finalCalculatedRho: null, calculationErrorRho: "Balance points cannot be the same." };
+      }
+      
+      const calculatedRho = R / (l_swapped - l_normal);
+      return { finalCalculatedRho: calculatedRho.toFixed(4), calculationErrorRho: null };
+    }
+    return { finalCalculatedRho: null, calculationErrorRho: "Requires one normal and one swapped reading." };
+  }, [readings, experimentMode]);
+
+  const deviationX = (finalCalculatedX && trueXValue)
     ? Math.abs(((parseFloat(finalCalculatedX) - trueXValue) / trueXValue) * 100).toFixed(2)
     : 'N/A';
+
+  const deviationRho = (finalCalculatedRho && wireResistancePerCm)
+    ? Math.abs(((parseFloat(finalCalculatedRho) - wireResistancePerCm) / wireResistancePerCm) * 100).toFixed(2)
+    : 'N/A';
+
+  const isFindXMode = experimentMode === 'findX';
+
+  const renderCalculationResults = () => {
+    if (isFindXMode) {
+      return (
+        <>
+          <div className="font-semibold flex justify-between">
+              <span>Final Calculated X:</span>
+              {finalCalculatedX ? (
+                  <span>{finalCalculatedX} Ω</span>
+              ) : (
+                  <span className="text-xs text-muted-foreground">{calculationErrorX}</span>
+              )}
+          </div>
+          {finalCalculatedX && (
+            <>
+              <div className="font-semibold flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span>True Value of X:</span>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Reveal True Value?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will reveal the actual value of the unknown resistance.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => setShowTrueX(true)}>Reveal</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                <span>{showTrueX ? `${trueXValue.toFixed(2)} Ω` : '? Ω'}</span>
+              </div>
+              {showTrueX && (
+                <div className="font-semibold flex justify-between text-destructive">
+                  <span>Deviation:</span>
+                  <span>{deviationX} %</span>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      );
+    } else { // findRho Mode
+        return (
+           <>
+                <div className="font-semibold flex justify-between">
+                    <span>Calculated ρ (rho):</span>
+                    {finalCalculatedRho ? (
+                        <span>{finalCalculatedRho} Ω/cm</span>
+                    ) : (
+                        <span className="text-xs text-muted-foreground">{calculationErrorRho}</span>
+                    )}
+                </div>
+                {finalCalculatedRho && (
+                <>
+                    <div className="font-semibold flex justify-between items-center">
+                       <div className="flex items-center gap-2">
+                         <span>True Value of ρ:</span>
+                         <AlertDialog>
+                           <AlertDialogTrigger asChild>
+                             <Button variant="ghost" size="icon" className="h-6 w-6">
+                               <Eye className="w-4 h-4" />
+                             </Button>
+                           </AlertDialogTrigger>
+                           <AlertDialogContent>
+                             <AlertDialogHeader>
+                               <AlertDialogTitle>Reveal True Value?</AlertDialogTitle>
+                               <AlertDialogDescription>
+                                 This will reveal the actual resistance per unit length of the wire.
+                               </AlertDialogDescription>
+                             </AlertDialogHeader>
+                             <AlertDialogFooter>
+                               <AlertDialogCancel>Cancel</AlertDialogCancel>
+                               <AlertDialogAction onClick={() => setShowTrueRho(true)}>Reveal</AlertDialogAction>
+                             </AlertDialogFooter>
+                           </AlertDialogContent>
+                         </AlertDialog>
+                       </div>
+                      <span>{showTrueRho ? `${wireResistancePerCm.toFixed(4)} Ω/cm` : '? Ω/cm'}</span>
+                    </div>
+                    {showTrueRho && (
+                      <div className="font-semibold flex justify-between text-destructive">
+                        <span>Deviation:</span>
+                        <span>{deviationRho} %</span>
+                      </div>
+                    )}
+                </>
+                )}
+           </>
+        );
+    }
+  }
+
 
   return (
     <Card className="w-full flex flex-col">
       <CardHeader>
-        <CardTitle className="font-headline">Analysis</CardTitle>
-        <CardDescription>Review your data and calculate the unknown resistance.</CardDescription>
+        <CardTitle className="font-headline">{isFindXMode ? 'Analysis (Find X)' : 'Analysis (Find ρ)'}</CardTitle>
+        <CardDescription>Review your data and perform calculations.</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col">
         <Tabs defaultValue="data" className="flex-grow flex flex-col">
@@ -154,49 +282,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
                 </Table>
               </ScrollArea>
               <div className="p-4 border-t space-y-3 bg-muted/50">
-                 <div className="font-semibold flex justify-between">
-                    <span>Final Calculated X:</span>
-                    {finalCalculatedX ? (
-                        <span>{finalCalculatedX} Ω</span>
-                    ) : (
-                        <span className="text-xs text-muted-foreground">{calculationError}</span>
-                    )}
-                </div>
-                {finalCalculatedX && (
-                  <>
-                    <div className="font-semibold flex justify-between items-center">
-                       <div className="flex items-center gap-2">
-                         <span>True Value of X:</span>
-                         <AlertDialog>
-                           <AlertDialogTrigger asChild>
-                             <Button variant="ghost" size="icon" className="h-6 w-6">
-                               <Eye className="w-4 h-4" />
-                             </Button>
-                           </AlertDialogTrigger>
-                           <AlertDialogContent>
-                             <AlertDialogHeader>
-                               <AlertDialogTitle>Reveal True Value?</AlertDialogTitle>
-                               <AlertDialogDescription>
-                                 This will reveal the actual value of the unknown resistance.
-                               </AlertDialogDescription>
-                             </AlertDialogHeader>
-                             <AlertDialogFooter>
-                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                               <AlertDialogAction onClick={() => setShowTrueX(true)}>Reveal</AlertDialogAction>
-                             </AlertDialogFooter>
-                           </AlertDialogContent>
-                         </AlertDialog>
-                       </div>
-                      <span>{showTrueX ? `${trueXValue.toFixed(2)} Ω` : '? Ω'}</span>
-                    </div>
-                    {showTrueX && (
-                      <div className="font-semibold flex justify-between text-destructive">
-                        <span>Deviation:</span>
-                        <span>{deviation} %</span>
-                      </div>
-                    )}
-                  </>
-                )}
+                 {renderCalculationResults()}
               </div>
             </Card>
           </TabsContent>

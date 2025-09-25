@@ -6,20 +6,21 @@ import { useToast } from '@/hooks/use-toast';
 import { getAiSuggestion } from '@/app/actions';
 import BridgeSimulation from '@/components/bridge-simulation';
 import DataPanel from '@/components/data-panel';
-import { Button } from '@/components/ui/button';
-import { Zap } from 'lucide-react';
 import { produce } from 'immer';
+import { Zap } from 'lucide-react';
+
 
 export type Reading = {
   id: number;
   rValue: number;
   l1: number;
   l2: number;
-  calculatedX: number;
-  isSwapped: boolean; // Add this to track the state when the reading was taken
+  isSwapped: boolean; // Tracks if R and X (or Copper Strip) are swapped
 };
 
-// Function to generate a random resistance value
+export type ExperimentMode = 'findX' | 'findRho';
+
+// Function to generate a random resistance value for X
 const getRandomResistance = () => parseFloat((Math.random() * 2 + 4).toFixed(1)); // From 4.0 to 6.0
 
 export default function Home() {
@@ -31,60 +32,68 @@ export default function Home() {
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isSwapped, setIsSwapped] = useState(false);
+  const [experimentMode, setExperimentMode] = useState<ExperimentMode>('findX');
   const { toast } = useToast();
 
   const P = 10; // Fixed inner resistance
   const Q = 10; // Fixed inner resistance
+  const WIRE_RESISTANCE_PER_CM = 0.02; // rho, resistance per cm of the wire (2 Ohm / 100cm)
 
   useEffect(() => {
     // Set a random resistance when the component mounts on the client
     setTrueX(getRandomResistance());
   }, []);
   
-  // The balance point calculation needs to be updated for the new setup.
-  // In a Carey Foster bridge, we're comparing the ratio of the outer resistances (R and X)
-  // to the ratio of the bridge wire segments. The inner resistances (P and Q) should be equal.
-  const rLeft = isSwapped ? trueX : knownR;
-  const rRight = isSwapped ? knownR : trueX;
+  const rLeft = useMemo(() => {
+    if (experimentMode === 'findX') {
+      return isSwapped ? trueX : knownR;
+    }
+    // findRho mode
+    return isSwapped ? 0 : knownR; // Copper strip has ~0 resistance
+  }, [isSwapped, knownR, trueX, experimentMode]);
+
+  const rRight = useMemo(() => {
+    if (experimentMode === 'findX') {
+      return isSwapped ? knownR : trueX;
+    }
+    // findRho mode
+    return isSwapped ? knownR : 0;
+  }, [isSwapped, knownR, trueX, experimentMode]);
   
-  // The potential difference is more complex. A simplified model is used here for simulation.
-  // The balance point is where the potential ratio is equal.
-  // P/Q = (R_left + resistance of l1) / (R_right + resistance of l2)
-  // For simulation purposes, let's keep it simple. The core idea is that swapping R and X moves the balance point.
-  // Let's assume the wire has a total resistance, and jockeyPos divides it.
-  const wireTotalResistance = 2; // Assume 2 Ohm for the 100cm wire
   const balancePoint = useMemo(() => {
-    // This formula simulates the shift in balance point when R and X are swapped.
-    // It's a simplified model for the simulation effect.
-    return 50 * (1 + (rLeft - rRight) / (rLeft + rRight) * (P/Q));
-  }, [rLeft, rRight, P, Q]);
+    // We assume P = Q. The balance condition is:
+    // rLeft + l1 * WIRE_RESISTANCE_PER_CM = rRight + (100 - l1) * WIRE_RESISTANCE_PER_CM
+    // rLeft + l1 * rho = rRight + 100*rho - l1*rho
+    // 2 * l1 * rho = rRight - rLeft + 100 * rho
+    // l1 = (rRight - rLeft) / (2 * rho) + 50
+    const l1 = 50 + (rRight - rLeft) / (2 * WIRE_RESISTANCE_PER_CM);
+    return l1;
+  }, [rLeft, rRight]);
 
   const potentialDifference = useMemo(() => {
-    // A simplified representation of the potential difference for the galvanometer
     const theoreticalJockeyPos = balancePoint;
+    // The difference from the ideal balance point creates a potential difference
     return (jockeyPos - theoreticalJockeyPos) / 50; // Normalize to get a deflection value
   }, [jockeyPos, balancePoint]);
 
   const handleRecord = useCallback(() => {
     const l1 = jockeyPos;
-    const l2 = 100 - l1;
-
-    // The calculation of X now depends on whether R and X are swapped.
-    // This logic is complex. For now, let's record l1 and l2.
-    // The user will need two readings (swapped and not-swapped) to calculate X accurately.
-    // X = R * (l2_swapped / l1_swapped) based on the second reading.
-    // Let's provide a simplified calculation for a single reading.
-    const calculatedX = isSwapped ? (knownR * l1) / l2 : (knownR * l2) / l1;
 
     const newReading: Reading = {
       id: Date.now(),
       rValue: knownR,
       l1: parseFloat(l1.toFixed(2)),
-      l2: parseFloat(l2.toFixed(2)),
-      calculatedX: parseFloat(calculatedX.toFixed(2)),
+      l2: parseFloat((100 - l1).toFixed(2)),
       isSwapped: isSwapped,
     };
-    setReadings(prev => [...prev, newReading]);
+    setReadings(prev => 
+      produce(prev, draft => {
+        // In each mode, only readings for that mode are kept.
+        // But we need to keep track of readings per experiment type
+        // Let's just add the reading. The data panel will filter them.
+        draft.push(newReading);
+      })
+    );
   }, [jockeyPos, knownR, isSwapped]);
   
   const handleSwap = () => {
@@ -101,7 +110,22 @@ export default function Home() {
     setIsSwapped(false);
   }, []);
   
+  const handleModeChange = (mode: ExperimentMode) => {
+    setExperimentMode(mode);
+    // Reset relevant state when mode changes
+    handleReset();
+  }
+
   const selectedReading = useMemo(() => readings.find(r => r.id === selectedReadingId), [readings, selectedReadingId]);
+  
+  // This is a simplified calculation for the AI prompt, not the primary result
+  const calculatedXForAI = useMemo(() => {
+    if(!selectedReading) return 0;
+    const { rValue, l1, l2, isSwapped } = selectedReading;
+    if (experimentMode === 'findRho') return 0; // X is not relevant here
+    return isSwapped ? (rValue * l1) / l2 : (rValue * l2) / l1;
+  }, [selectedReading, experimentMode]);
+
 
   const handleGetSuggestion = useCallback(async () => {
     if (!selectedReading) return;
@@ -112,11 +136,8 @@ export default function Home() {
     const input: SuggestResistanceValuesInput = {
         R: selectedReading.rValue,
         l1: selectedReading.l1,
-        // In a Carey Foster bridge, we don't use l2 directly in the same way.
-        // And the concept of X is what we are trying to find.
-        // Let's pass the calculated X as the approximate value.
-        l2: 100 - selectedReading.l1,
-        X: selectedReading.calculatedX,
+        l2: selectedReading.l2,
+        X: parseFloat(calculatedXForAI.toFixed(2))
     };
 
     const result = await getAiSuggestion(input);
@@ -130,7 +151,7 @@ export default function Home() {
       });
     }
     setIsAiLoading(false);
-  }, [selectedReading, toast]);
+  }, [selectedReading, calculatedXForAI, toast]);
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -153,11 +174,13 @@ export default function Home() {
               potentialDifference={potentialDifference}
               onRecord={handleRecord}
               onReset={handleReset}
-              isBalanced={Math.abs(potentialDifference) < 0.005} // Looser threshold for balance
+              isBalanced={Math.abs(potentialDifference) < 0.005}
               isSwapped={isSwapped}
               onSwap={handleSwap}
               P={P}
               Q={Q}
+              experimentMode={experimentMode}
+              onModeChange={handleModeChange}
             />
           </div>
           <div className="lg:col-span-2">
@@ -170,6 +193,8 @@ export default function Home() {
               onGetSuggestion={handleGetSuggestion}
               selectedReading={selectedReading}
               trueXValue={trueX}
+              experimentMode={experimentMode}
+              wireResistancePerCm={WIRE_RESISTANCE_PER_CM}
             />
           </div>
         </div>
