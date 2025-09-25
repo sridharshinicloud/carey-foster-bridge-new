@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
@@ -9,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Zap, MoveHorizontal, Save, RefreshCw, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 
 interface ResistanceControlProps {
@@ -80,9 +78,6 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
 }) => {
   const wireRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  
-  const resistorImage = PlaceHolderImages.find(p => p.id === 'resistor');
-  const galvanometerImage = PlaceHolderImages.find(p => p.id === 'galvanometer');
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (isDragging && wireRef.current) {
@@ -126,16 +121,16 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
             <div className="flex justify-between items-start">
                <div className="flex flex-col items-center gap-2 w-32 text-center">
                  <p className="font-medium">Known (R)</p>
-                 {resistorImage && 
-                    <Image src={resistorImage.imageUrl} alt="Known Resistor" width={80} height={80} className="rounded-md object-cover" data-ai-hint={resistorImage.imageHint} />
-                  }
+                  <div className="w-20 h-20 bg-card border rounded-md flex items-center justify-center">
+                    <Zap className="w-8 h-8 text-primary" />
+                  </div>
                  <span>{knownR.toFixed(1)} Ω</span>
                </div>
                <div className="flex flex-col items-center gap-2 w-32 text-center">
                  <p className="font-medium">Unknown (X)</p>
-                 {resistorImage && 
-                    <Image src={resistorImage.imageUrl} alt="Unknown Resistor" width={80} height={80} className="rounded-md object-cover" data-ai-hint={resistorImage.imageHint} />
-                  }
+                  <div className="w-20 h-20 bg-card border rounded-md flex items-center justify-center">
+                    <Zap className="w-8 h-8 text-primary" />
+                  </div>
                  <span>{trueX.toFixed(1)} Ω</span>
                </div>
             </div>
@@ -173,15 +168,13 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
           </Card>
           <Card className={cn("p-4 transition-colors flex flex-col items-center justify-center", isBalanced ? "bg-green-100 dark:bg-green-900/30" : "")}>
             <CardDescription>Galvanometer (ΔV)</CardDescription>
-             {galvanometerImage &&
-              <div className="relative w-20 h-12 mt-2">
-                <Image src={galvanometerImage.imageUrl} alt="Galvanometer" layout="fill" objectFit="contain" data-ai-hint={galvanometerImage.imageHint}/>
+              <div className="relative w-20 h-16 mt-2 rounded bg-card border flex items-center justify-center overflow-hidden">
                 <div 
                   className="absolute bottom-1/2 left-1/2 w-px h-1/2 bg-red-600 origin-bottom transition-transform duration-300" 
                   style={{ transform: `translateX(-50%) rotate(${potentialDifference * 450}deg)` }}
                 />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-foreground"></div>
               </div>
-            }
             <CardTitle className={cn("font-mono transition-colors text-sm mt-1", isBalanced ? "text-green-600 dark:text-green-400" : "")}>
               {(potentialDifference * 10).toFixed(4)} V
             </CardTitle>
