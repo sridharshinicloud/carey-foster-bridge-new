@@ -129,18 +129,24 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                </div>
             </div>
           </div>
-          <div ref={wireRef} className="relative h-2 bg-primary/20 rounded-full w-full cursor-pointer" onMouseDown={() => setIsDragging(true)}>
-            <div
-              className="absolute top-1/2 -translate-y-1/2 w-4 h-12 bg-accent rounded-sm shadow-lg flex items-center justify-center cursor-ew-resize transition-all duration-75"
-              style={{ left: `${jockeyPos}%`, transform: 'translate(-50%, -50%)' }}
-            >
-              <MoveHorizontal className="w-4 h-4 text-accent-foreground" />
+          <div className="relative pt-8">
+            <div className="absolute w-full top-0 px-[1px] flex justify-between items-end">
+              {Array.from({ length: 11 }).map((_, i) => (
+                <div key={i} className="flex flex-col items-center">
+                  <span className="text-xs font-mono -mb-1">{i * 10}</span>
+                  <div className={cn("bg-foreground", i % 5 === 0 ? 'h-4 w-0.5' : 'h-2 w-px')} />
+                </div>
+              ))}
             </div>
-            <div className="absolute top-full mt-2 text-xs" style={{ left: `${jockeyPos}%`, transform: 'translateX(-50%)' }}>l₁</div>
-          </div>
-          <div className="flex justify-between text-xs font-mono">
-            <span>0 cm</span>
-            <span>100 cm</span>
+            <div ref={wireRef} className="relative h-2 bg-primary/20 rounded-full w-full cursor-pointer" onMouseDown={() => setIsDragging(true)}>
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-12 bg-accent rounded-sm shadow-lg flex items-center justify-center cursor-ew-resize transition-all duration-75"
+                style={{ left: `${jockeyPos}%`, transform: 'translate(-50%, -50%)' }}
+              >
+                <MoveHorizontal className="w-4 h-4 text-accent-foreground" />
+              </div>
+              <div className="absolute top-full mt-2 text-xs" style={{ left: `${jockeyPos}%`, transform: 'translateX(-50%)' }}>l₁</div>
+            </div>
           </div>
         </div>
 
