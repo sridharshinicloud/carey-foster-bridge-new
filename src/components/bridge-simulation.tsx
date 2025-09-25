@@ -167,8 +167,6 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
             {/* Wires */}
             <div className="absolute top-8 left-1/2 -translate-x-1/2 w-48 h-20">
                 <svg width="100%" height="100%" viewBox="0 0 192 80" className="overflow-visible">
-                    {/* Galvanometer connection point */}
-                    <path d="M 96 80 L 96 50" stroke="hsl(var(--foreground))" strokeWidth="2" fill="none" />
                 </svg>
             </div>
             
