@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
@@ -9,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Zap, MoveHorizontal, Save, RefreshCw, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 
 interface ResistanceControlProps {
@@ -80,7 +78,6 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
 }) => {
   const wireRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const bridgeImage = PlaceHolderImages.find(p => p.id === 'carey-foster-bridge');
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (isDragging && wireRef.current) {
@@ -121,19 +118,6 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
         <div className="space-y-4">
           <h3 className="font-medium text-center">Carey Foster Bridge</h3>
           <div className="relative aspect-[3/2] w-full rounded-lg overflow-hidden bg-muted">
-            {bridgeImage && (
-                <Image
-                    src={bridgeImage.imageUrl}
-                    alt={bridgeImage.description}
-                    data-ai-hint={bridgeImage.imageHint}
-                    fill
-                    className={cn(
-                        "object-cover transition-all duration-500",
-                        isBalanced ? "scale-105" : "scale-100",
-                        Math.abs(potentialDifference) > 0.01 ? 'opacity-80' : 'opacity-100'
-                    )}
-                />
-            )}
             <div className="absolute inset-0 flex justify-between items-center p-4">
                <div className="flex flex-col items-center gap-2 p-2 bg-black/50 text-white rounded-lg w-28 text-center backdrop-blur-sm">
                  <Zap className="w-6 h-6 text-yellow-300" />
