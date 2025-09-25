@@ -1,3 +1,10 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "carey-foster-bridge",
+      "description": "A Carey Foster bridge setup in a physics lab.",
+      "imageUrl": "https://images.unsplash.com/photo-1734582439971-1998e0da6ff3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwaHlzaWNzJTIwbGFifGVufDB8fHx8MTc1ODgwNzc2NXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "physics lab"
+    }
+  ]
 }
