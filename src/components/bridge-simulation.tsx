@@ -5,60 +5,35 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Zap, MoveHorizontal, Save, RefreshCw, AlertCircle, HelpCircle } from 'lucide-react';
+import { Zap, MoveHorizontal, Save, RefreshCw, AlertCircle, HelpCircle, GitCommitHorizontal, Settings, Repeat } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-
-interface ResistanceControlProps {
-  label: string;
-  value: number;
-  onValueChange: (value: number) => void;
-  min?: number;
-  max?: number;
-  step?: number;
-  tooltip: string;
+interface ResistanceBoxProps {
+    label: string;
+    value: string | number;
+    isInput?: boolean;
+    onValueChange?: (value: number) => void;
+    Icon: React.ElementType;
+    position: 'left' | 'right' | 'inner-left' | 'inner-right';
 }
 
-const ResistanceControl: React.FC<ResistanceControlProps> = ({ label, value, onValueChange, min = 0.1, max = 20, step = 0.1, tooltip }) => {
-  return (
-    <div className="space-y-3">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center gap-2">
-              <label className="font-medium text-sm">{label}</label>
-              <AlertCircle className="w-4 h-4 text-muted-foreground" />
+const ResistanceBox: React.FC<ResistanceBoxProps> = ({ label, value, Icon, position }) => {
+    return (
+        <div className={cn("flex flex-col items-center gap-1 w-24 text-center", 
+            position === 'left' && 'absolute left-4 top-1/2 -translate-y-[calc(50%+2rem)]',
+            position === 'right' && 'absolute right-4 top-1/2 -translate-y-[calc(50%+2rem)]',
+            position === 'inner-left' && 'absolute left-1/2 -translate-x-[calc(100%+2rem)] top-8',
+            position === 'inner-right' && 'absolute right-1/2 translate-x-[calc(100%+2rem)] top-8',
+            )}>
+            <p className="font-medium text-sm">{label}</p>
+            <div className="w-16 h-12 bg-card border-2 border-primary/50 rounded-md flex items-center justify-center">
+                <Icon className="w-7 h-7 text-primary" />
             </div>
-          </TooltipTrigger>
-          <TooltipContent><p>{tooltip}</p></TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
-      <div className="flex items-center gap-2">
-        <Slider
-          value={[value]}
-          onValueChange={(vals) => onValueChange(vals[0])}
-          min={min}
-          max={max}
-          step={step}
-          className="flex-1"
-        />
-        <Input
-          type="number"
-          value={value.toFixed(1)}
-          onChange={(e) => onValueChange(Math.max(min, Math.min(max, parseFloat(e.target.value) || 0)))}
-          className="w-24 text-center"
-          min={min}
-          max={max}
-          step={step}
-        />
-        <span className="text-sm font-medium">Ω</span>
-      </div>
-    </div>
-  );
-};
-
+            <span className="text-sm font-semibold">{typeof value === 'number' ? `${value.toFixed(1)} Ω` : value}</span>
+        </div>
+    )
+}
 
 interface BridgeSimulationProps {
   knownR: number;
@@ -69,10 +44,14 @@ interface BridgeSimulationProps {
   onRecord: () => void;
   onReset: () => void;
   isBalanced: boolean;
+  isSwapped: boolean;
+  onSwap: () => void;
+  P: number;
+  Q: number;
 }
 
 const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
-  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced
+  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced, isSwapped, onSwap, P, Q
 }) => {
   const wireRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -107,75 +86,111 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="font-headline">Experiment Setup</CardTitle>
-        <CardDescription>Adjust the known resistance and slide the jockey to find the balance point.</CardDescription>
+        <CardDescription>Adjust the known resistance, swap R and X, and slide the jockey to find the balance points.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ResistanceControl label="Known Resistance (R)" value={knownR} onValueChange={onKnownRChange} tooltip="This is the standard resistor in your circuit. Adjust it to get a clear balance point." />
-          <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+            <div className="space-y-3">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2">
+                      <label className="font-medium text-sm">Known Resistance (R)</label>
+                      <AlertCircle className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent><p>This is the standard resistor. Adjust it to be close to the unknown resistance.</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
               <div className="flex items-center gap-2">
-                <label className="font-medium text-sm">Unknown Resistance (X)</label>
+                <Slider
+                  value={[knownR]}
+                  onValueChange={(vals) => onKnownRChange(vals[0])}
+                  min={1}
+                  max={20}
+                  step={0.1}
+                  className="flex-1"
+                />
+                <Input
+                  type="number"
+                  value={knownR.toFixed(1)}
+                  onChange={(e) => onKnownRChange(Math.max(1, Math.min(20, parseFloat(e.target.value) || 0)))}
+                  className="w-24 text-center"
+                  min={1}
+                  max={20}
+                  step={0.1}
+                />
+                <span className="text-sm font-medium">Ω</span>
               </div>
-              <div className="flex items-center justify-center h-10 w-full rounded-md border border-dashed bg-muted/50">
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <HelpCircle className="w-4 h-4" />
-                  <span>Your goal is to find this value.</span>
-                </p>
-              </div>
-          </div>
+            </div>
+            <Button onClick={onSwap} variant="outline">
+                <Repeat className="mr-2 h-4 w-4" /> Swap R and X
+            </Button>
         </div>
 
         <div className="space-y-4">
           <h3 className="font-medium text-center">Carey Foster Bridge</h3>
-          <div className="relative aspect-[4/3] w-full rounded-lg overflow-hidden bg-muted/50 border p-4 flex flex-col justify-between">
-            <div className="flex justify-between items-start">
-               <div className="flex flex-col items-center gap-2 w-32 text-center">
-                 <p className="font-medium">Known (R)</p>
-                  <div className="w-20 h-20 bg-card border rounded-md flex items-center justify-center">
-                    <Zap className="w-8 h-8 text-primary" />
-                  </div>
-                 <span>{knownR.toFixed(1)} Ω</span>
-               </div>
-               <div className="flex flex-col items-center gap-2 w-32 text-center">
-                 <p className="font-medium">Unknown (X)</p>
-                  <div className="w-20 h-20 bg-card border rounded-md flex items-center justify-center">
-                    <HelpCircle className="w-8 h-8 text-primary" />
-                  </div>
-                 <span>? Ω</span>
-               </div>
+          <div className="relative aspect-video w-full rounded-lg bg-muted/30 border-2 border-dashed p-4 flex flex-col justify-end">
+            
+            {/* Resistors */}
+            <ResistanceBox label={isSwapped ? "X" : "R"} value={isSwapped ? "?" : knownR} Icon={isSwapped ? HelpCircle : Zap} position="left" />
+            <ResistanceBox label={isSwapped ? "R" : "X"} value={isSwapped ? knownR : "?"} Icon={isSwapped ? Zap : HelpCircle} position="right" />
+            <ResistanceBox label="P" value={P} Icon={Settings} position="inner-left" />
+            <ResistanceBox label="Q" value={Q} Icon={Settings} position="inner-right" />
+            
+            {/* Wires */}
+            <div className="absolute top-8 left-1/2 -translate-x-1/2 w-48 h-20">
+                <svg width="100%" height="100%" viewBox="0 0 192 80" className="overflow-visible">
+                    {/* Connections to P and Q */}
+                    <path d="M 0 40 L 40 40 L 40 0" stroke="hsl(var(--foreground))" strokeWidth="2" fill="none" />
+                    <path d="M 192 40 L 152 40 L 152 0" stroke="hsl(var(--foreground))" strokeWidth="2" fill="none" />
+                    <path d="M 96 80 L 96 50" stroke="hsl(var(--foreground))" strokeWidth="2" fill="none" />
+                    <path d="M 40 40 L 96 40" stroke="hsl(var(--foreground))" strokeWidth="2" fill="none" />
+                    <path d="M 152 40 L 96 40" stroke="hsl(var(--foreground))" strokeWidth="2" fill="none" />
+                </svg>
+            </div>
+            
+             {/* Battery and Key - Visual only */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-1">
+                 <span className="text-2xl font-light text-muted-foreground/50">+</span>
+                 <div className="h-4 w-10 border-y-2 border-muted-foreground/50"></div>
+                 <span className="text-3xl font-light text-muted-foreground/50 -mt-1.5 ">-</span>
             </div>
 
+
+            {/* Bridge Wire and Scale */}
             <div className="relative pt-8">
-              <div className="absolute w-full top-0 px-[1px] flex justify-between items-end">
+              <div className="absolute w-full top-0 left-0 px-[1px] flex justify-between items-end">
                 {Array.from({ length: 11 }).map((_, i) => (
                   <div key={i} className="flex flex-col items-center">
                     <span className="text-xs font-mono -mb-1">{i * 10}</span>
-                    <div className={cn("bg-foreground", i % 5 === 0 ? 'h-4 w-0.5' : 'h-2 w-px')} />
+                    <div className={cn("bg-foreground", i % 5 === 0 ? 'h-3 w-0.5' : 'h-2 w-px')} />
                   </div>
                 ))}
               </div>
-              <div ref={wireRef} className="relative h-2 bg-primary/20 rounded-full w-full cursor-pointer" onMouseDown={() => setIsDragging(true)}>
-                <div
-                  className="absolute top-1/2 -translate-y-1/2 w-4 h-12 bg-accent rounded-sm shadow-lg flex items-center justify-center cursor-ew-resize transition-all duration-75"
-                  style={{ left: `${jockeyPos}%`, transform: 'translate(-50%, -50%)' }}
-                >
-                  <MoveHorizontal className="w-4 h-4 text-accent-foreground" />
-                </div>
-                <div className="absolute top-full mt-2 text-xs" style={{ left: `${jockeyPos}%`, transform: 'translateX(-50%)' }}>l₁</div>
+              <div ref={wireRef} className="relative h-1.5 bg-primary/30 rounded-full w-full cursor-pointer" onMouseDown={() => setIsDragging(true)}>
+                 {/* Main wire */}
               </div>
+               {/* Jockey */}
+                <div
+                  className="absolute top-[3px] -translate-y-1/2 w-3 h-10 bg-accent rounded-b-sm shadow-lg flex items-start justify-center cursor-ew-resize transition-all duration-75"
+                  style={{ left: `${jockeyPos}%`, transform: 'translateX(-50%)' }}
+                  onMouseDown={() => setIsDragging(true)}
+                >
+                  <div className="w-px h-full bg-accent-foreground/50" />
+                </div>
+                {/* Connection to Galvanometer */}
+                <div className="absolute" style={{ left: `${jockeyPos}%`, top: '-48px', height: '54px', width: '1px' }}>
+                     <svg width="100%" height="100%" viewBox="0 0 1 54" className="overflow-visible">
+                        <path d="M 0.5 0 L 0.5 54" stroke="hsl(var(--foreground))" strokeWidth="2" fill="none" />
+                     </svg>
+                </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-          <Card className="p-4">
-            <CardDescription>Length l₁</CardDescription>
-            <CardTitle className="font-mono">{jockeyPos.toFixed(2)} cm</CardTitle>
-          </Card>
-          <Card className="p-4">
-            <CardDescription>Length l₂</CardDescription>
-            <CardTitle className="font-mono">{(100 - jockeyPos).toFixed(2)} cm</CardTitle>
-          </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
           <Card className={cn("p-4 transition-colors flex flex-col items-center justify-center", isBalanced ? "bg-green-100 dark:bg-green-900/30" : "")}>
             <CardDescription>Galvanometer (ΔV)</CardDescription>
               <div className="relative w-32 h-20 mt-1">
@@ -202,18 +217,17 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                 </svg>
               </div>
             <CardTitle className={cn("font-mono transition-colors text-sm -mt-3", isBalanced ? "text-green-600 dark:text-green-400" : "")}>
-              {(potentialDifference * 10).toFixed(4)} V
+              {isBalanced ? 'Balanced' : 'Unbalanced'}
             </CardTitle>
           </Card>
-        </div>
-
-        <div className="flex flex-wrap gap-4 justify-center pt-4">
-          <Button onClick={onRecord} disabled={!isBalanced}>
-            <Save className="mr-2 h-4 w-4" /> Record Data
-          </Button>
-          <Button variant="outline" onClick={onReset}>
-            <RefreshCw className="mr-2 h-4 w-4" /> Reset Experiment
-          </Button>
+          <div className="flex flex-col gap-4 justify-center">
+              <Button onClick={onRecord} disabled={!isBalanced}>
+                <Save className="mr-2 h-4 w-4" /> Record Data
+              </Button>
+              <Button variant="outline" onClick={onReset}>
+                <RefreshCw className="mr-2 h-4 w-4" /> Reset Experiment
+              </Button>
+          </div>
         </div>
 
       </CardContent>

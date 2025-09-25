@@ -42,17 +42,25 @@ const prompt = ai.definePrompt({
   name: 'suggestResistanceValuesPrompt',
   input: {schema: SuggestResistanceValuesInputSchema},
   output: {schema: SuggestResistanceValuesOutputSchema},
-  prompt: `You are an expert in electrical engineering, specifically with Carey Foster bridges.
+  prompt: `You are an expert physics lab assistant, specializing in the Carey Foster bridge.
 
-You will receive initial measurements from an experiment, including l1, l2, R, and X. Your goal is to suggest adjustments to the known resistance value (R) to optimize the experiment for accuracy and clarity.
+You will receive an initial measurement from a user's experiment. Your goal is to provide clear, actionable advice to help them perform the experiment correctly and get an accurate result.
 
-Here's the data from the initial measurements:
-- l1: {{{l1}}}
-- l2: {{{l2}}}
-- R: {{{R}}}
-- X: {{{X}}}
+The user's data for one of their readings is:
+- Known Resistance (R): {{{R}}} Ω
+- Balance Point (l1): {{{l1}}} cm
+- Approximate Unknown Resistance (X): {{{X}}} Ω
 
-Based on this data, provide specific recommendations for adjusting the value of R. Explain why these adjustments are likely to improve the experiment's results. Focus on strategies to achieve a more distinct null point and minimize the impact of end resistances.
+Based on this data, provide helpful suggestions. Consider the following:
+1.  **The Goal of Swapping:** Explain clearly *why* they need to take a second reading after swapping the positions of R and X. Mention that this is the key to eliminating end-resistances and getting an accurate result.
+2.  **Ideal Balance Point:** The most accurate readings are obtained when the balance point (l1) is near the center of the wire (around 50 cm). If the user's l1 is far from the center, advise them to adjust the known resistance R to be closer to the unknown resistance X.
+3.  **Procedure Checklist:** Provide a simple, step-by-step procedure for the user to follow, like this:
+    - Step 1: Set R, find balance point l1, and record.
+    - Step 2: Swap R and X.
+    - Step 3: Find the new balance point l1', and record.
+    - Step 4: Explain how to use the two readings to calculate the final value of X.
+
+Keep the tone encouraging and helpful.
 `,
 });
 
