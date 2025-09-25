@@ -102,6 +102,8 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
+  
+  const needleRotation = Math.max(-45, Math.min(45, potentialDifference * 450));
 
   return (
     <Card className="w-full">
@@ -168,14 +170,30 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
           </Card>
           <Card className={cn("p-4 transition-colors flex flex-col items-center justify-center", isBalanced ? "bg-green-100 dark:bg-green-900/30" : "")}>
             <CardDescription>Galvanometer (ΔV)</CardDescription>
-              <div className="relative w-20 h-16 mt-2 rounded bg-card border flex items-center justify-center overflow-hidden">
-                <div 
-                  className="absolute bottom-1/2 left-1/2 w-px h-1/2 bg-red-600 origin-bottom transition-transform duration-300" 
-                  style={{ transform: `translateX(-50%) rotate(${potentialDifference * 450}deg)` }}
-                />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-foreground"></div>
+              <div className="relative w-32 h-20 mt-1">
+                <svg viewBox="0 0 100 60" className="w-full h-full">
+                  {/* Scale */}
+                  <path d="M 10 50 A 40 40 0 0 1 90 50" stroke="hsl(var(--muted-foreground))" strokeWidth="1" fill="none" />
+                  {/* Markings */}
+                  {[-45, -22.5, 0, 22.5, 45].map(angle => {
+                    const x1 = 50 + 40 * Math.sin(angle * Math.PI / 180);
+                    const y1 = 50 - 40 * Math.cos(angle * Math.PI / 180);
+                    const x2 = 50 + 35 * Math.sin(angle * Math.PI / 180);
+                    const y2 = 50 - 35 * Math.cos(angle * Math.PI / 180);
+                    return <line key={angle} x1={x1} y1={y1} x2={x2} y2={y2} stroke="hsl(var(--muted-foreground))" strokeWidth="1" />;
+                  })}
+                  <line x1="50" y1="10" x2="50" y2="15" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" />
+
+                  {/* Needle */}
+                  <g style={{ transform: `rotate(${needleRotation}deg)`, transformOrigin: '50px 50px', transition: 'transform 300ms ease-out' }}>
+                    <polygon points="50,50 49,15 51,15" fill="hsl(var(--destructive))" />
+                  </g>
+
+                  {/* Pivot */}
+                  <circle cx="50" cy="50" r="3" fill="hsl(var(--foreground))" />
+                </svg>
               </div>
-            <CardTitle className={cn("font-mono transition-colors text-sm mt-1", isBalanced ? "text-green-600 dark:text-green-400" : "")}>
+            <CardTitle className={cn("font-mono transition-colors text-sm -mt-3", isBalanced ? "text-green-600 dark:text-green-400" : "")}>
               {(potentialDifference * 10).toFixed(4)} V
             </CardTitle>
           </Card>
