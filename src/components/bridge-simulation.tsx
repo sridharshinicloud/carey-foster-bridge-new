@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Zap, MoveHorizontal, Save, RefreshCw, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 
 interface ResistanceControlProps {
@@ -78,6 +80,9 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
 }) => {
   const wireRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  
+  const resistorImage = PlaceHolderImages.find(p => p.id === 'resistor');
+  const galvanometerImage = PlaceHolderImages.find(p => p.id === 'galvanometer');
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (isDragging && wireRef.current) {
@@ -117,35 +122,42 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
 
         <div className="space-y-4">
           <h3 className="font-medium text-center">Carey Foster Bridge</h3>
-          <div className="relative aspect-[3/2] w-full rounded-lg overflow-hidden bg-muted">
-            <div className="absolute inset-0 flex justify-between items-center p-4">
-               <div className="flex flex-col items-center gap-2 p-2 bg-black/50 text-white rounded-lg w-28 text-center backdrop-blur-sm">
-                 <Zap className="w-6 h-6 text-yellow-300" />
-                 <span>R = {knownR.toFixed(1)} Ω</span>
+          <div className="relative aspect-[4/3] w-full rounded-lg overflow-hidden bg-muted/50 border p-4 flex flex-col justify-between">
+            <div className="flex justify-between items-start">
+               <div className="flex flex-col items-center gap-2 w-32 text-center">
+                 <p className="font-medium">Known (R)</p>
+                 {resistorImage && 
+                    <Image src={resistorImage.imageUrl} alt="Known Resistor" width={80} height={80} className="rounded-md object-cover" data-ai-hint={resistorImage.imageHint} />
+                  }
+                 <span>{knownR.toFixed(1)} Ω</span>
                </div>
-               <div className="flex flex-col items-center gap-2 p-2 bg-black/50 text-white rounded-lg w-28 text-center backdrop-blur-sm">
-                 <Zap className="w-6 h-6 text-yellow-300" />
-                 <span>X = {trueX.toFixed(1)} Ω</span>
+               <div className="flex flex-col items-center gap-2 w-32 text-center">
+                 <p className="font-medium">Unknown (X)</p>
+                 {resistorImage && 
+                    <Image src={resistorImage.imageUrl} alt="Unknown Resistor" width={80} height={80} className="rounded-md object-cover" data-ai-hint={resistorImage.imageHint} />
+                  }
+                 <span>{trueX.toFixed(1)} Ω</span>
                </div>
             </div>
-          </div>
-          <div className="relative pt-8">
-            <div className="absolute w-full top-0 px-[1px] flex justify-between items-end">
-              {Array.from({ length: 11 }).map((_, i) => (
-                <div key={i} className="flex flex-col items-center">
-                  <span className="text-xs font-mono -mb-1">{i * 10}</span>
-                  <div className={cn("bg-foreground", i % 5 === 0 ? 'h-4 w-0.5' : 'h-2 w-px')} />
-                </div>
-              ))}
-            </div>
-            <div ref={wireRef} className="relative h-2 bg-primary/20 rounded-full w-full cursor-pointer" onMouseDown={() => setIsDragging(true)}>
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-4 h-12 bg-accent rounded-sm shadow-lg flex items-center justify-center cursor-ew-resize transition-all duration-75"
-                style={{ left: `${jockeyPos}%`, transform: 'translate(-50%, -50%)' }}
-              >
-                <MoveHorizontal className="w-4 h-4 text-accent-foreground" />
+
+            <div className="relative pt-8">
+              <div className="absolute w-full top-0 px-[1px] flex justify-between items-end">
+                {Array.from({ length: 11 }).map((_, i) => (
+                  <div key={i} className="flex flex-col items-center">
+                    <span className="text-xs font-mono -mb-1">{i * 10}</span>
+                    <div className={cn("bg-foreground", i % 5 === 0 ? 'h-4 w-0.5' : 'h-2 w-px')} />
+                  </div>
+                ))}
               </div>
-              <div className="absolute top-full mt-2 text-xs" style={{ left: `${jockeyPos}%`, transform: 'translateX(-50%)' }}>l₁</div>
+              <div ref={wireRef} className="relative h-2 bg-primary/20 rounded-full w-full cursor-pointer" onMouseDown={() => setIsDragging(true)}>
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 w-4 h-12 bg-accent rounded-sm shadow-lg flex items-center justify-center cursor-ew-resize transition-all duration-75"
+                  style={{ left: `${jockeyPos}%`, transform: 'translate(-50%, -50%)' }}
+                >
+                  <MoveHorizontal className="w-4 h-4 text-accent-foreground" />
+                </div>
+                <div className="absolute top-full mt-2 text-xs" style={{ left: `${jockeyPos}%`, transform: 'translateX(-50%)' }}>l₁</div>
+              </div>
             </div>
           </div>
         </div>
@@ -159,9 +171,18 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
             <CardDescription>Length l₂</CardDescription>
             <CardTitle className="font-mono">{(100 - jockeyPos).toFixed(2)} cm</CardTitle>
           </Card>
-          <Card className={cn("p-4 transition-colors", isBalanced ? "bg-green-100 dark:bg-green-900/30" : "")}>
+          <Card className={cn("p-4 transition-colors flex flex-col items-center justify-center", isBalanced ? "bg-green-100 dark:bg-green-900/30" : "")}>
             <CardDescription>Galvanometer (ΔV)</CardDescription>
-            <CardTitle className={cn("font-mono transition-colors", isBalanced ? "text-green-600 dark:text-green-400" : "")}>
+             {galvanometerImage &&
+              <div className="relative w-20 h-12 mt-2">
+                <Image src={galvanometerImage.imageUrl} alt="Galvanometer" layout="fill" objectFit="contain" data-ai-hint={galvanometerImage.imageHint}/>
+                <div 
+                  className="absolute bottom-1/2 left-1/2 w-px h-1/2 bg-red-600 origin-bottom transition-transform duration-300" 
+                  style={{ transform: `translateX(-50%) rotate(${potentialDifference * 450}deg)` }}
+                />
+              </div>
+            }
+            <CardTitle className={cn("font-mono transition-colors text-sm mt-1", isBalanced ? "text-green-600 dark:text-green-400" : "")}>
               {(potentialDifference * 10).toFixed(4)} V
             </CardTitle>
           </Card>
