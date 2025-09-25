@@ -62,18 +62,25 @@ export default function Home() {
   
   const balancePoint = useMemo(() => {
     // We assume P = Q. The balance condition is:
-    // rLeft + l1 * WIRE_RESISTANCE_PER_CM = rRight + (100 - l1) * WIRE_RESISTANCE_PER_CM
-    // rLeft + l1 * rho = rRight + 100*rho - l1*rho
-    // 2 * l1 * rho = rRight - rLeft + 100 * rho
-    // l1 = (rRight - rLeft) / (2 * rho) + 50
-    const l1 = 50 + (rRight - rLeft) / (2 * WIRE_RESISTANCE_PER_CM);
-    return l1;
+    // (rLeft + alpha) / (rRight + beta) = (P + l1*rho) / (Q + (100-l1)*rho)
+    // For simplicity, let's assume ideal wires and P=Q, so the condition simplifies to finding the point where the potential is equal.
+    // The potential at the jockey is proportional to its position.
+    // Potential at junction of P and Q is V_battery / 2 (assuming P=Q)
+    // Potential along the wire: V(l) = V_left_terminal + (V_right_terminal - V_left_terminal) * l / 100
+    // Simplified model: We want the potential divider from the top branch (R-X) to match the bottom (wire)
+    // (rLeft + l1*rho) should be equal to (rRight + (100-l1)*rho) for the galvanometer to show zero.
+    // rLeft + l1*rho = rRight + 100*rho - l1*rho
+    // 2*l1*rho = rRight - rLeft + 100*rho
+    // l1 = (rRight - rLeft)/(2*rho) + 50
+    return 50 + (rRight - rLeft) / (2 * WIRE_RESISTANCE_PER_CM);
   }, [rLeft, rRight]);
 
   const potentialDifference = useMemo(() => {
     const theoreticalJockeyPos = balancePoint;
     // The difference from the ideal balance point creates a potential difference
-    return (jockeyPos - theoreticalJockeyPos) / 50; // Normalize to get a deflection value
+    // This is a simplified model for visualization.
+    // A larger difference means a larger deflection. The divisor scales the effect.
+    return (jockeyPos - theoreticalJockeyPos) / 25; // Normalization factor for deflection
   }, [jockeyPos, balancePoint]);
 
   const handleRecord = useCallback(() => {
@@ -121,9 +128,16 @@ export default function Home() {
   // This is a simplified calculation for the AI prompt, not the primary result
   const calculatedXForAI = useMemo(() => {
     if(!selectedReading) return 0;
-    const { rValue, l1, l2, isSwapped } = selectedReading;
+    const { rValue, l1 } = selectedReading;
+    // Basic Wheatstone bridge formula approximation for a single reading
     if (experimentMode === 'findRho') return 0; // X is not relevant here
-    return isSwapped ? (rValue * l1) / l2 : (rValue * l2) / l1;
+    
+    // This is a rough approximation. The proper calculation needs two readings.
+    // P/Q = (R+l1*rho)/(X+(100-l1)*rho), assuming P=Q, R+l1*rho = X+(100-l1)*rho
+    // X = R + (2*l1 - 100) * rho
+    const approxX = rValue + (2 * l1 - 100) * WIRE_RESISTANCE_PER_CM;
+    return approxX;
+
   }, [selectedReading, experimentMode]);
 
 
@@ -136,7 +150,8 @@ export default function Home() {
     const input: SuggestResistanceValuesInput = {
         R: selectedReading.rValue,
         l1: selectedReading.l1,
-        l2: selectedReading.l2,
+        // The AI prompt expects l2, which is 100 - l1
+        l2: 100 - selectedReading.l1,
         X: parseFloat(calculatedXForAI.toFixed(2))
     };
 
@@ -174,7 +189,7 @@ export default function Home() {
               potentialDifference={potentialDifference}
               onRecord={handleRecord}
               onReset={handleReset}
-              isBalanced={Math.abs(potentialDifference) < 0.005}
+              isBalanced={Math.abs(potentialDifference) < 0.01}
               isSwapped={isSwapped}
               onSwap={handleSwap}
               P={P}

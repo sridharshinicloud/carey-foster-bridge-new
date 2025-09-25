@@ -170,9 +170,8 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                     {/* Connections to P and Q */}
                     <path d="M 0 40 L 40 40 L 40 0" stroke="hsl(var(--foreground))" strokeWidth="2" fill="none" />
                     <path d="M 192 40 L 152 40 L 152 0" stroke="hsl(var(--foreground))" strokeWidth="2" fill="none" />
+                    {/* Galvanometer connection */}
                     <path d="M 96 80 L 96 50" stroke="hsl(var(--foreground))" strokeWidth="2" fill="none" />
-                    <path d="M 40 40 L 96 40" stroke="hsl(var(--foreground))" strokeWidth="2" fill="none" />
-                    <path d="M 152 40 L 96 40" stroke="hsl(var(--foreground))" strokeWidth="2" fill="none" />
                 </svg>
             </div>
             
@@ -242,7 +241,7 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                 </svg>
               </div>
             <CardTitle className={cn("font-mono transition-colors text-sm -mt-3", isBalanced ? "text-green-600 dark:text-green-400" : "")}>
-              {isBalanced ? 'Balanced' : 'Balanced'}
+              {isBalanced ? 'Balanced' : 'Unbalanced'}
             </CardTitle>
           </Card>
           <div className="flex flex-col gap-4 justify-center">
