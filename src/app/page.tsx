@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { SuggestResistanceValuesInput } from '@/ai/flows/suggest-resistance-values';
 import { useToast } from '@/hooks/use-toast';
 import { getAiSuggestion } from '@/app/actions';
@@ -17,6 +17,9 @@ export type Reading = {
   calculatedX: number;
 };
 
+// Function to generate a random resistance value
+const getRandomResistance = () => parseFloat((Math.random() * 19 + 1).toFixed(1));
+
 export default function Home() {
   const [trueX, setTrueX] = useState(5.0);
   const [knownR, setKnownR] = useState(5.0);
@@ -26,6 +29,11 @@ export default function Home() {
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Set a random resistance when the component mounts on the client
+    setTrueX(getRandomResistance());
+  }, []);
 
   const balancePoint = useMemo(() => (100 * knownR) / (knownR + trueX), [knownR, trueX]);
   const potentialDifference = useMemo(() => (jockeyPos / 100) - (knownR / (knownR + trueX)), [jockeyPos, knownR, trueX]);
@@ -46,7 +54,7 @@ export default function Home() {
 
   const handleReset = useCallback(() => {
     setReadings([]);
-    setTrueX(5.0);
+    setTrueX(getRandomResistance());
     setKnownR(5.0);
     setJockeyPos(50.0);
     setAiSuggestion('');
@@ -85,8 +93,6 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-3">
             <BridgeSimulation
-              trueX={trueX}
-              onTrueXChange={setTrueX}
               knownR={knownR}
               onKnownRChange={setKnownR}
               jockeyPos={jockeyPos}
@@ -106,6 +112,7 @@ export default function Home() {
               isAiLoading={isAiLoading}
               onGetSuggestion={handleGetSuggestion}
               selectedReading={selectedReading}
+              trueXValue={trueX}
             />
           </div>
         </div>

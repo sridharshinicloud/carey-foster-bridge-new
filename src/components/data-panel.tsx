@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { Reading } from '@/app/page';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Bot, Loader2 } from 'lucide-react';
+import { Sparkles, Bot, Loader2, Lightbulb, Eye, EyeOff } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
@@ -15,6 +15,17 @@ import { z } from 'zod';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import type { SuggestResistanceValuesInput } from '@/ai/flows/suggest-resistance-values';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface DataPanelProps {
   readings: Reading[];
@@ -24,6 +35,7 @@ interface DataPanelProps {
   isAiLoading: boolean;
   onGetSuggestion: (data: SuggestResistanceValuesInput) => Promise<void>;
   selectedReading: Reading | undefined;
+  trueXValue: number;
 }
 
 const suggestionFormSchema = z.object({
@@ -34,12 +46,14 @@ const suggestionFormSchema = z.object({
 });
 
 const DataPanel: React.FC<DataPanelProps> = ({
-  readings, selectedReadingId, onSelectReading, aiSuggestion, isAiLoading, onGetSuggestion, selectedReading
+  readings, selectedReadingId, onSelectReading, aiSuggestion, isAiLoading, onGetSuggestion, selectedReading, trueXValue
 }) => {
   const form = useForm<z.infer<typeof suggestionFormSchema>>({
     resolver: zodResolver(suggestionFormSchema),
     defaultValues: { R: 5, l1: 50, l2: 50, X: 5 }
   });
+
+  const [showTrueX, setShowTrueX] = useState(false);
 
   useEffect(() => {
     if (selectedReading) {
@@ -58,6 +72,10 @@ const DataPanel: React.FC<DataPanelProps> = ({
   
   const averageX = readings.length > 0
     ? (readings.reduce((acc, r) => acc + r.calculatedX, 0) / readings.length).toFixed(2)
+    : 'N/A';
+
+  const deviation = (readings.length > 0 && trueXValue)
+    ? Math.abs(((parseFloat(averageX) - trueXValue) / trueXValue) * 100).toFixed(2)
     : 'N/A';
 
   return (
@@ -107,8 +125,46 @@ const DataPanel: React.FC<DataPanelProps> = ({
                   </TableBody>
                 </Table>
               </ScrollArea>
-              <div className="p-4 border-t font-semibold flex justify-end">
-                Average Calculated X: {averageX} Ω
+              <div className="p-4 border-t space-y-2">
+                <div className="font-semibold flex justify-between">
+                  <span>Average Calculated X:</span>
+                  <span>{averageX} Ω</span>
+                </div>
+                {readings.length > 0 && (
+                  <>
+                    <div className="font-semibold flex justify-between items-center">
+                       <div className="flex items-center gap-2">
+                         <span>True Value of X:</span>
+                         <AlertDialog>
+                           <AlertDialogTrigger asChild>
+                             <Button variant="ghost" size="icon" className="h-6 w-6">
+                               <Eye className="w-4 h-4" />
+                             </Button>
+                           </AlertDialogTrigger>
+                           <AlertDialogContent>
+                             <AlertDialogHeader>
+                               <AlertDialogTitle>Reveal True Value?</AlertDialogTitle>
+                               <AlertDialogDescription>
+                                 Are you sure you want to see the actual value of the unknown resistance? This might spoil the experiment.
+                               </AlertDialogDescription>
+                             </AlertDialogHeader>
+                             <AlertDialogFooter>
+                               <AlertDialogCancel>Cancel</AlertDialogCancel>
+                               <AlertDialogAction onClick={() => setShowTrueX(true)}>Reveal</AlertDialogAction>
+                             </AlertDialogFooter>
+                           </AlertDialogContent>
+                         </AlertDialog>
+                       </div>
+                      <span>{showTrueX ? `${trueXValue.toFixed(2)} Ω` : '? Ω'}</span>
+                    </div>
+                    {showTrueX && (
+                      <div className="font-semibold flex justify-between text-destructive">
+                        <span>Deviation:</span>
+                        <span>{deviation} %</span>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </Card>
           </TabsContent>
@@ -151,7 +207,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
                             </FormItem>
                           )} />
                       </div>
-                      <Button type="submit" className="w-full" disabled={isAiLoading}>
+                      <Button type="submit" className="w-full" disabled={isAiLoading || !selectedReading}>
                         {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                         Get Suggestions
                       </Button>

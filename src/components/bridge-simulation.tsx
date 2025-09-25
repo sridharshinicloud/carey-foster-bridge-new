@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Zap, MoveHorizontal, Save, RefreshCw, AlertCircle } from 'lucide-react';
+import { Zap, MoveHorizontal, Save, RefreshCw, AlertCircle, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -61,8 +61,6 @@ const ResistanceControl: React.FC<ResistanceControlProps> = ({ label, value, onV
 
 
 interface BridgeSimulationProps {
-  trueX: number;
-  onTrueXChange: (value: number) => void;
   knownR: number;
   onKnownRChange: (value: number) => void;
   jockeyPos: number;
@@ -74,7 +72,7 @@ interface BridgeSimulationProps {
 }
 
 const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
-  trueX, onTrueXChange, knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced
+  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced
 }) => {
   const wireRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -109,12 +107,22 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="font-headline">Experiment Setup</CardTitle>
-        <CardDescription>Adjust resistances and find the balance point.</CardDescription>
+        <CardDescription>Adjust the known resistance and slide the jockey to find the balance point.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ResistanceControl label="Known Resistance (R)" value={knownR} onValueChange={onKnownRChange} tooltip="This is the standard resistor in your circuit." />
-          <ResistanceControl label="Unknown Resistance (X)" value={trueX} onValueChange={onTrueXChange} tooltip="This is the resistor you are trying to measure." />
+          <ResistanceControl label="Known Resistance (R)" value={knownR} onValueChange={onKnownRChange} tooltip="This is the standard resistor in your circuit. Adjust it to get a clear balance point." />
+          <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <label className="font-medium text-sm">Unknown Resistance (X)</label>
+              </div>
+              <div className="flex items-center justify-center h-10 w-full rounded-md border border-dashed bg-muted/50">
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <HelpCircle className="w-4 h-4" />
+                  <span>Your goal is to find this value.</span>
+                </p>
+              </div>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -131,9 +139,9 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                <div className="flex flex-col items-center gap-2 w-32 text-center">
                  <p className="font-medium">Unknown (X)</p>
                   <div className="w-20 h-20 bg-card border rounded-md flex items-center justify-center">
-                    <Zap className="w-8 h-8 text-primary" />
+                    <HelpCircle className="w-8 h-8 text-primary" />
                   </div>
-                 <span>{trueX.toFixed(1)} Ω</span>
+                 <span>? Ω</span>
                </div>
             </div>
 
