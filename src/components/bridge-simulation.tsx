@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Zap, Save, RefreshCw, AlertCircle, HelpCircle, GitCommitHorizontal, Settings, Repeat, Sigma } from 'lucide-react';
+import { Zap, Save, RefreshCw, AlertCircle, HelpCircle, Settings, Repeat, Sigma } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -195,16 +195,10 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
               </div>
                {/* Jockey */}
                 <div
-                  className="absolute top-[3px] -translate-y-1/2 w-3 h-10 bg-accent rounded-b-sm shadow-lg flex items-start justify-center cursor-ew-resize transition-all duration-75"
+                  className="absolute top-1/2 -translate-y-1/2 w-3 h-6 bg-accent rounded-sm shadow-lg cursor-ew-resize transition-all duration-75"
                   style={{ left: `${jockeyPos}%`, transform: 'translateX(-50%)' }}
                   onMouseDown={() => setIsDragging(true)}
                 >
-                </div>
-                {/* Connection to Galvanometer */}
-                <div className="absolute" style={{ left: `${jockeyPos}%`, top: '-48px', height: '54px', width: '1px' }}>
-                     <svg width="100%" height="100%" viewBox="0 0 1 54" className="overflow-visible">
-                        <path d="M 0.5 0 L 0.5 54" stroke="hsl(var(--foreground))" strokeWidth="2" fill="none" />
-                     </svg>
                 </div>
             </div>
           </div>
