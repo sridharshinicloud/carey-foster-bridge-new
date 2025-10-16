@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -19,6 +20,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Zap, Info } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 
 export type Reading = {
@@ -32,12 +35,7 @@ export type Reading = {
 export type ExperimentMode = 'findX' | 'findRho';
 
 export default function Home() {
-  // NOTE TO INSTRUCTOR:
-  // To change the true value of the unknown resistance for the experiment,
-  // modify the number in the following line. For example, to set it to 7.5 Ohms,
-  // change useState(5.0) to useState(7.5).
-  const [trueX, setTrueX] = useState(5.0); // This can be secretly set by an instructor
-
+  const [trueX, setTrueX] = useState(5.0);
   const [knownR, setKnownR] = useState(5.0);
   const [jockeyPos, setJockeyPos] = useState(50.0);
   const [readings, setReadings] = useState<Reading[]>([]);
@@ -47,6 +45,7 @@ export default function Home() {
   const [isSwapped, setIsSwapped] = useState(false);
   const [experimentMode, setExperimentMode] = useState<ExperimentMode>('findX');
   const [isTrueValueRevealed, setIsTrueValueRevealed] = useState(false);
+  const [newTrueXInput, setNewTrueXInput] = useState(trueX.toString());
   const { toast } = useToast();
 
   const P = 10; // Fixed inner resistance
@@ -159,6 +158,23 @@ export default function Home() {
     setIsAiLoading(false);
   }, [selectedReading, calculatedXForAI, toast]);
 
+  const handleTrueXChange = () => {
+    const newValue = parseFloat(newTrueXInput);
+    if (!isNaN(newValue) && newValue > 0) {
+      setTrueX(newValue);
+      toast({
+        title: 'Success!',
+        description: `The unknown resistance (X) has been set to ${newValue.toFixed(2)} Ω.`,
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Value',
+        description: 'Please enter a positive number for the resistance.',
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header className="py-4 border-b">
@@ -179,19 +195,30 @@ export default function Home() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>How to Set the Unknown Resistance (X)</AlertDialogTitle>
+                  <AlertDialogTitle>Set the Unknown Resistance (X)</AlertDialogTitle>
                   <AlertDialogDescription>
-                    To change the true value of the unknown resistance for the experiment, you need to edit the source code.
-                    <ol className="list-decimal list-inside mt-4 bg-muted p-4 rounded-md text-sm">
-                        <li>Open the file: <code className="font-mono bg-background px-1 py-0.5 rounded">src/app/page.tsx</code></li>
-                        <li>Find the line of code that looks like this:<br/><code className="font-mono bg-background px-1 py-0.5 rounded">const [trueX, setTrueX] = useState(5.0);</code></li>
-                        <li>Change the number <code className="font-mono bg-background px-1 py-0.5 rounded">5.0</code> to your desired resistance value (e.g., <code className="font-mono bg-background px-1 py-0.5 rounded">7.5</code>).</li>
-                        <li>Save the file. The simulation will update with the new secret value.</li>
-                    </ol>
+                    Use the field below to set the true value of the unknown resistance for the experiment. This value will be hidden from the student's view.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="true-x-input" className="text-right">
+                      X Value (Ω)
+                    </Label>
+                    <Input
+                      id="true-x-input"
+                      type="number"
+                      value={newTrueXInput}
+                      onChange={(e) => setNewTrueXInput(e.target.value)}
+                      className="col-span-3"
+                      step="0.1"
+                      min="0.1"
+                    />
+                  </div>
+                </div>
                 <AlertDialogFooter>
-                  <AlertDialogAction>Got it!</AlertDialogAction>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleTrueXChange}>Set Value</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
