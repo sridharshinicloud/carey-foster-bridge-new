@@ -51,6 +51,8 @@ export default function Home() {
   const [experimentMode, setExperimentMode] = useState<ExperimentMode>('findX');
   const [isTrueValueRevealed, setIsTrueValueRevealed] = useState(false);
   const [newTrueXInput, setNewTrueXInput] = useState(trueX.toString());
+  const [isInstructionDialogOpen, setIsInstructionDialogOpen] = useState(false);
+  const [isValueLocked, setIsValueLocked] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -115,6 +117,7 @@ export default function Home() {
     setSelectedReadingId(null);
     setIsSwapped(false);
     setIsTrueValueRevealed(false);
+    setIsValueLocked(false);
   }, []);
 
   const handleModeChange = (mode: ExperimentMode) => {
@@ -171,6 +174,8 @@ export default function Home() {
         title: 'Success!',
         description: `The unknown resistance (X) has been set to ${newValue.toFixed(2)} Ω.`,
       });
+      setIsValueLocked(true);
+      setIsInstructionDialogOpen(false);
     } else {
       toast({
         variant: 'destructive',
@@ -183,7 +188,7 @@ export default function Home() {
   const handleGenerateReport = () => {
     const reportData = JSON.stringify({
       readings: allReadings,
-      trueX: trueXValue,
+      trueX: trueX,
       trueRho: WIRE_RESISTANCE_PER_CM,
     });
     sessionStorage.setItem('reportData', reportData);
@@ -207,9 +212,9 @@ export default function Home() {
                 Generate Report
             </Button>
 
-            <AlertDialog>
+            <AlertDialog open={isInstructionDialogOpen} onOpenChange={setIsInstructionDialogOpen}>
               <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" disabled={isValueLocked}>
                     <Info className="mr-2 h-4 w-4"/>
                     Instructor Information
                   </Button>
@@ -218,7 +223,7 @@ export default function Home() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Set the Unknown Resistance (X)</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Use the field below to set the true value of the unknown resistance for the experiment. This value will be hidden from the student's view.
+                    Use the field below to set the true value of the unknown resistance for the experiment. This value will be hidden from the student's view. This dialog cannot be opened again until the experiment is reset.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="grid gap-4 py-4">
@@ -239,7 +244,7 @@ export default function Home() {
                 </div>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleTrueXChange}>Set Value</AlertDialogAction>
+                  <AlertDialogAction onClick={handleTrueXChange}>Set Value and Lock</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
