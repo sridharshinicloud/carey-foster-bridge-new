@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Bot, Loader2, Eye, Repeat } from 'lucide-react';
+import { Sparkles, Bot, Loader2, Repeat } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
@@ -14,17 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+
 
 interface DataPanelProps {
   readings: Reading[];
@@ -54,9 +44,6 @@ const DataPanel: React.FC<DataPanelProps> = ({
     defaultValues: { R: 5, l1: 50, X: 5 }
   });
 
-  const [showTrueX, setShowTrueX] = useState(false);
-  const [showTrueRho, setShowTrueRho] = useState(false);
-
   useEffect(() => {
     if (selectedReading) {
       form.reset({
@@ -67,12 +54,6 @@ const DataPanel: React.FC<DataPanelProps> = ({
       });
     }
   }, [selectedReading, form, experimentMode]);
-
-  useEffect(() => {
-    // Reset reveal states when experiment mode changes
-    setShowTrueX(false);
-    setShowTrueRho(false);
-  }, [experimentMode]);
 
   const onSubmit = () => {
     onGetSuggestion();
@@ -128,14 +109,6 @@ const DataPanel: React.FC<DataPanelProps> = ({
     return { finalCalculatedRho: null, calculationErrorRho: "Requires one normal and one swapped reading." };
   }, [readings, experimentMode]);
 
-  const deviationX = (finalCalculatedX && trueXValue)
-    ? Math.abs(((parseFloat(finalCalculatedX) - trueXValue) / trueXValue) * 100).toFixed(2)
-    : 'N/A';
-
-  const deviationRho = (finalCalculatedRho && wireResistancePerCm)
-    ? Math.abs(((parseFloat(finalCalculatedRho) - wireResistancePerCm) / wireResistancePerCm) * 100).toFixed(2)
-    : 'N/A';
-
   const isFindXMode = experimentMode === 'findX';
 
   const renderCalculationResults = () => {
@@ -150,41 +123,10 @@ const DataPanel: React.FC<DataPanelProps> = ({
                   <span className="text-xs text-muted-foreground">{calculationErrorX}</span>
               )}
           </div>
-          {finalCalculatedX && (
-            <>
-              <div className="font-semibold flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span>True Value of X:</span>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Reveal True Value?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will reveal the actual value of the unknown resistance.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => setShowTrueX(true)}>Reveal</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                <span>{showTrueX ? `${trueXValue.toFixed(2)} Ω` : '? Ω'}</span>
-              </div>
-              {showTrueX && (
-                <div className="font-semibold flex justify-between text-destructive">
-                  <span>Deviation:</span>
-                  <span>{deviationX} %</span>
-                </div>
-              )}
-            </>
-          )}
+          <div className="font-semibold flex justify-between items-center">
+              <span>True Value of X:</span>
+              <span>? Ω</span>
+          </div>
         </>
       );
     } else { // findRho Mode
@@ -198,41 +140,10 @@ const DataPanel: React.FC<DataPanelProps> = ({
                         <span className="text-xs text-muted-foreground">{calculationErrorRho}</span>
                     )}
                 </div>
-                {finalCalculatedRho && (
-                <>
-                    <div className="font-semibold flex justify-between items-center">
-                       <div className="flex items-center gap-2">
-                         <span>True Value of ρ:</span>
-                         <AlertDialog>
-                           <AlertDialogTrigger asChild>
-                             <Button variant="ghost" size="icon" className="h-6 w-6">
-                               <Eye className="w-4 h-4" />
-                             </Button>
-                           </AlertDialogTrigger>
-                           <AlertDialogContent>
-                             <AlertDialogHeader>
-                               <AlertDialogTitle>Reveal True Value?</AlertDialogTitle>
-                               <AlertDialogDescription>
-                                 This will reveal the actual resistance per unit length of the wire.
-                               </AlertDialogDescription>
-                             </AlertDialogHeader>
-                             <AlertDialogFooter>
-                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                               <AlertDialogAction onClick={() => setShowTrueRho(true)}>Reveal</AlertDialogAction>
-                             </AlertDialogFooter>
-                           </AlertDialogContent>
-                         </AlertDialog>
-                       </div>
-                      <span>{showTrueRho ? `${wireResistancePerCm.toFixed(4)} Ω/cm` : '? Ω/cm'}</span>
-                    </div>
-                    {showTrueRho && (
-                      <div className="font-semibold flex justify-between text-destructive">
-                        <span>Deviation:</span>
-                        <span>{deviationRho} %</span>
-                      </div>
-                    )}
-                </>
-                )}
+                <div className="font-semibold flex justify-between items-center">
+                    <span>True Value of ρ:</span>
+                    <span>? Ω/cm</span>
+                </div>
            </>
         );
     }
