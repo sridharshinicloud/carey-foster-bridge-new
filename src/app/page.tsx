@@ -21,7 +21,7 @@ export type Reading = {
 export type ExperimentMode = 'findX' | 'findRho';
 
 export default function Home() {
-  const [trueX, setTrueX] = useState(5.0);
+  const [trueX, setTrueX] = useState(5.0); // This can be secretly set by an instructor
   const [knownR, setKnownR] = useState(5.0);
   const [jockeyPos, setJockeyPos] = useState(50.0);
   const [readings, setReadings] = useState<Reading[]>([]);
@@ -55,7 +55,7 @@ export default function Home() {
   
   const balancePoint = useMemo(() => {
     return 50 + (rRight - rLeft) / (2 * WIRE_RESISTANCE_PER_CM);
-  }, [rLeft, rRight, WIRE_RESISTANCE_PER_CM]);
+  }, [rLeft, rRight]);
 
   const potentialDifference = useMemo(() => {
     const theoreticalJockeyPos = balancePoint;
@@ -157,8 +157,6 @@ export default function Home() {
             <BridgeSimulation
               knownR={knownR}
               onKnownRChange={setKnownR}
-              trueX={trueX}
-              onTrueXChange={setTrueX}
               jockeyPos={jockeyPos}
               onJockeyMove={setJockeyPos}
               potentialDifference={potentialDifference}

@@ -41,8 +41,6 @@ const ResistanceBox: React.FC<ResistanceBoxProps> = ({ label, value, Icon, posit
 interface BridgeSimulationProps {
   knownR: number;
   onKnownRChange: (value: number) => void;
-  trueX: number;
-  onTrueXChange: (value: number) => void;
   jockeyPos: number;
   onJockeyMove: (pos: number) => void;
   potentialDifference: number;
@@ -58,7 +56,7 @@ interface BridgeSimulationProps {
 }
 
 const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
-  knownR, onKnownRChange, trueX, onTrueXChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced, isSwapped, onSwap, P, Q, experimentMode, onModeChange
+  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced, isSwapped, onSwap, P, Q, experimentMode, onModeChange
 }) => {
   const wireRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -148,32 +146,6 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                 <span className="text-sm font-medium">Ω</span>
               </div>
             </div>
-            
-            {isFindXMode && (
-                 <div className="space-y-3">
-                    <label className="font-medium text-sm text-amber-600">Set True Unknown Resistance (X)</label>
-                    <div className="flex items-center gap-2">
-                        <Slider
-                        value={[trueX]}
-                        onValueChange={(vals) => onTrueXChange(vals[0])}
-                        min={0.0}
-                        max={20.0}
-                        step={0.1}
-                        className="flex-1"
-                        />
-                        <Input
-                        type="number"
-                        value={trueX.toFixed(1)}
-                        onChange={(e) => onTrueXChange(parseFloat(e.target.value) || 0)}
-                        className="w-24 text-center"
-                        min={0.0}
-                        max={20.0}
-                        step={0.1}
-                        />
-                        <span className="text-sm font-medium">Ω</span>
-                    </div>
-                 </div>
-            )}
         </div>
         <div className="flex justify-end">
              <Button onClick={onSwap} variant="outline">
