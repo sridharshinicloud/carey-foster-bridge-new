@@ -20,9 +20,6 @@ export type Reading = {
 
 export type ExperimentMode = 'findX' | 'findRho';
 
-// Function to generate a random resistance value for X
-const getRandomResistance = () => parseFloat((Math.random() * 2 + 4).toFixed(1)); // From 4.0 to 6.0
-
 export default function Home() {
   const [trueX, setTrueX] = useState(5.0);
   const [knownR, setKnownR] = useState(5.0);
@@ -38,11 +35,6 @@ export default function Home() {
   const P = 10; // Fixed inner resistance
   const Q = 10; // Fixed inner resistance
   const WIRE_RESISTANCE_PER_CM = 0.02; // rho, resistance per cm of the wire (2 Ohm / 100cm)
-
-  useEffect(() => {
-    // Set a random resistance when the component mounts on the client
-    setTrueX(getRandomResistance());
-  }, []);
   
   const rLeft = useMemo(() => {
     if (experimentMode === 'findX') {
@@ -62,16 +54,9 @@ export default function Home() {
   
   const balancePoint = useMemo(() => {
     // We assume P = Q. The balance condition is:
-    // (rLeft + alpha) / (rRight + beta) = (P + l1*rho) / (Q + (100-l1)*rho)
-    // For simplicity, let's assume ideal wires and P=Q, so the condition simplifies to finding the point where the potential is equal.
-    // The potential at the jockey is proportional to its position.
-    // Potential at junction of P and Q is V_battery / 2 (assuming P=Q)
-    // Potential along the wire: V(l) = V_left_terminal + (V_right_terminal - V_left_terminal) * l / 100
-    // Simplified model: We want the potential divider from the top branch (R-X) to match the bottom (wire)
-    // (rLeft + l1*rho) should be equal to (rRight + (100-l1)*rho) for the galvanometer to show zero.
-    // rLeft + l1*rho = rRight + 100*rho - l1*rho
-    // 2*l1*rho = rRight - rLeft + 100*rho
-    // l1 = (rRight - rLeft)/(2*rho) + 50
+    // (rLeft) / (rRight) = (l1*rho) / ((100-l1)*rho) assuming ideal bridge with no end resistances
+    // But for Carey Foster, the formula is l1 = 50 + (rRight - rLeft) / (2 * rho)
+    // This simplified model gives the ideal balance point on the wire.
     return 50 + (rRight - rLeft) / (2 * WIRE_RESISTANCE_PER_CM);
   }, [rLeft, rRight]);
 
@@ -95,9 +80,6 @@ export default function Home() {
     };
     setReadings(prev => 
       produce(prev, draft => {
-        // In each mode, only readings for that mode are kept.
-        // But we need to keep track of readings per experiment type
-        // Let's just add the reading. The data panel will filter them.
         draft.push(newReading);
       })
     );
@@ -109,7 +91,6 @@ export default function Home() {
 
   const handleReset = useCallback(() => {
     setReadings([]);
-    setTrueX(getRandomResistance());
     setKnownR(5.0);
     setJockeyPos(50.0);
     setAiSuggestion('');
@@ -184,6 +165,8 @@ export default function Home() {
             <BridgeSimulation
               knownR={knownR}
               onKnownRChange={setKnownR}
+              trueX={trueX}
+              onTrueXChange={setTrueX}
               jockeyPos={jockeyPos}
               onJockeyMove={setJockeyPos}
               potentialDifference={potentialDifference}

@@ -68,6 +68,12 @@ const DataPanel: React.FC<DataPanelProps> = ({
     }
   }, [selectedReading, form, experimentMode]);
 
+  useEffect(() => {
+    // Reset reveal states when experiment mode changes
+    setShowTrueX(false);
+    setShowTrueRho(false);
+  }, [experimentMode]);
+
   const onSubmit = () => {
     onGetSuggestion();
   };
@@ -75,20 +81,21 @@ const DataPanel: React.FC<DataPanelProps> = ({
   const { finalCalculatedX, calculationErrorX } = useMemo(() => {
     if (experimentMode !== 'findX') return { finalCalculatedX: null, calculationErrorX: null };
     
-    const normalReading = readings.find(r => !r.isSwapped);
-    const swappedReading = readings.find(r => r.isSwapped);
+    const findXReadings = readings.filter(r => r.isSwapped !== undefined);
+    const normalReading = findXReadings.find(r => !r.isSwapped);
+    const swappedReading = findXReadings.find(r => r.isSwapped);
 
     if (normalReading && swappedReading) {
       if (normalReading.rValue !== swappedReading.rValue) {
         return { finalCalculatedX: null, calculationErrorX: "R values must be the same for both readings." };
       }
-      // Formula: X = R + (l2 - l1) * rho
-      // Note: l1 and l2 in the formula are the two different balance points, not 100-l1
+      // Formula: X = R + (l1' - l1) * rho
+      // Where l1 is the balance point for the normal setup and l1' is for the swapped setup.
       const R = normalReading.rValue;
       const l1_normal = normalReading.l1;
       const l1_swapped = swappedReading.l1;
       
-      const calculatedX = R - wireResistancePerCm * (l1_swapped - l1_normal);
+      const calculatedX = R + wireResistancePerCm * (l1_swapped - l1_normal);
 
       return { finalCalculatedX: calculatedX.toFixed(2), calculationErrorX: null };
     }
@@ -98,8 +105,9 @@ const DataPanel: React.FC<DataPanelProps> = ({
   const { finalCalculatedRho, calculationErrorRho } = useMemo(() => {
     if (experimentMode !== 'findRho') return { finalCalculatedRho: null, calculationErrorRho: null };
     
-    const normalReading = readings.find(r => !r.isSwapped); // R in left, Copper in right
-    const swappedReading = readings.find(r => r.isSwapped); // Copper in left, R in right
+    const findRhoReadings = readings.filter(r => r.isSwapped !== undefined);
+    const normalReading = findRhoReadings.find(r => !r.isSwapped); // R in left, Copper in right
+    const swappedReading = findRhoReadings.find(r => r.isSwapped); // Copper in left, R in right
 
     if (normalReading && swappedReading) {
       if (normalReading.rValue !== swappedReading.rValue) {
