@@ -66,7 +66,7 @@ export default function Home() {
       rLeft = isSwapped ? trueX : knownR;
       rRight = isSwapped ? knownR : trueX;
     } else { // findRho
-      const copperStripResistance = 0;
+      const copperStripResistance = 0.001; // Using a very small non-zero value to avoid division by zero issues
       rLeft = isSwapped ? copperStripResistance : knownR;
       rRight = isSwapped ? knownR : copperStripResistance;
     }
@@ -340,3 +340,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
