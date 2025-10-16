@@ -77,12 +77,15 @@ export default function Home() {
   }, [isSwapped, knownR, trueX, experimentMode]);
 
   const balancePoint = useMemo(() => {
-    // The shift in balance point is proportional to the difference in resistances in the outer gaps.
-    const resistanceDifference = rLeft - rRight;
-    // The change in length (delta_l) from the center is (R1 - R2) / (2 * rho)
-    // The balance point l1 = 50 + delta_l
+    // Wheatstone bridge condition for Carey Foster: P/Q = (R_left_gap + R_wire_to_jockey) / (R_right_gap + R_wire_from_jockey)
+    // P = Q = 10, so R_left_gap + R_wire_to_jockey = R_right_gap + R_wire_from_jockey
+    // rLeft + l1 * WIRE_RESISTANCE_PER_CM = rRight + (100 - l1) * WIRE_RESISTANCE_PER_CM
+    // rLeft + l1 * rho = rRight + 100*rho - l1*rho
+    // 2 * l1 * rho = rRight - rLeft + 100*rho
+    // l1 = (rRight - rLeft) / (2 * rho) + 50
+    const resistanceDifference = rRight - rLeft;
     const balanceShift = resistanceDifference / (2 * WIRE_RESISTANCE_PER_CM);
-    return 50 - balanceShift;
+    return 50 + balanceShift;
   }, [rLeft, rRight, WIRE_RESISTANCE_PER_CM]);
   
   const potentialDifference = useMemo(() => {
@@ -308,5 +311,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
