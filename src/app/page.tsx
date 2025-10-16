@@ -87,9 +87,9 @@ export default function Home() {
     const resistanceDifference = rRight - rLeft;
     const balanceShift = resistanceDifference / (2 * WIRE_RESISTANCE_PER_CM);
     return 50 + balanceShift;
-  }, [rLeft, rRight, WIRE_RESISTANCE_PER_CM]);
+  }, [rLeft, rRight]);
 
-    const potentialDifference = useMemo(() => {
+  const potentialDifference = useMemo(() => {
     const theoreticalJockeyPos = balancePoint;
     const diff = jockeyPos - theoreticalJockeyPos;
     // This normalization factor can be tuned to control sensitivity.
@@ -359,3 +359,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
