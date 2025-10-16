@@ -7,7 +7,18 @@ import { getAiSuggestion } from '@/app/actions';
 import BridgeSimulation from '@/components/bridge-simulation';
 import DataPanel from '@/components/data-panel';
 import { produce } from 'immer';
-import { Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Zap, Info } from 'lucide-react';
 
 
 export type Reading = {
@@ -21,7 +32,12 @@ export type Reading = {
 export type ExperimentMode = 'findX' | 'findRho';
 
 export default function Home() {
+  // NOTE TO INSTRUCTOR:
+  // To change the true value of the unknown resistance for the experiment,
+  // modify the number in the following line. For example, to set it to 7.5 Ohms,
+  // change useState(5.0) to useState(7.5).
   const [trueX, setTrueX] = useState(5.0); // This can be secretly set by an instructor
+
   const [knownR, setKnownR] = useState(5.0);
   const [jockeyPos, setJockeyPos] = useState(50.0);
   const [readings, setReadings] = useState<Reading[]>([]);
@@ -54,7 +70,9 @@ export default function Home() {
   }, [isSwapped, knownR, trueX, experimentMode]);
   
   const balancePoint = useMemo(() => {
-    return 50 + (rRight - rLeft) / (2 * WIRE_RESISTANCE_PER_CM);
+    const totalWireResistance = WIRE_RESISTANCE_PER_CM * 100;
+    // Simplified bridge balance condition for center-tapped wire
+    return 50 * (1 + (rLeft - rRight) / totalWireResistance);
   }, [rLeft, rRight]);
 
   const potentialDifference = useMemo(() => {
@@ -144,11 +162,39 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header className="py-4 border-b">
-        <div className="container mx-auto px-4 flex items-center gap-3">
-           <div className="w-10 h-10 bg-primary text-primary-foreground flex items-center justify-center rounded-lg">
-            <Zap className="w-6 h-6" />
-          </div>
-          <h1 className="text-2xl font-bold font-headline">BridgeSim</h1>
+        <div className="container mx-auto px-4 flex items-center justify-between">
+           <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary text-primary-foreground flex items-center justify-center rounded-lg">
+                <Zap className="w-6 h-6" />
+              </div>
+              <h1 className="text-2xl font-bold font-headline">BridgeSim</h1>
+           </div>
+           
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Info className="mr-2 h-4 w-4"/>
+                    Instructor Information
+                  </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>How to Set the Unknown Resistance (X)</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    To change the true value of the unknown resistance for the experiment, you need to edit the source code.
+                    <ol className="list-decimal list-inside mt-4 bg-muted p-4 rounded-md text-sm">
+                        <li>Open the file: <code className="font-mono bg-background px-1 py-0.5 rounded">src/app/page.tsx</code></li>
+                        <li>Find the line of code that looks like this:<br/><code className="font-mono bg-background px-1 py-0.5 rounded">const [trueX, setTrueX] = useState(5.0);</code></li>
+                        <li>Change the number <code className="font-mono bg-background px-1 py-0.5 rounded">5.0</code> to your desired resistance value (e.g., <code className="font-mono bg-background px-1 py-0.5 rounded">7.5</code>).</li>
+                        <li>Save the file. The simulation will update with the new secret value.</li>
+                    </ol>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogAction>Got it!</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
         </div>
       </header>
       <main className="flex-grow container mx-auto p-4 md:p-8">
