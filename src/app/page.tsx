@@ -61,23 +61,17 @@ export default function Home() {
   const Q = 10; // Fixed inner resistance
   const WIRE_RESISTANCE_PER_CM = 0.02; // rho, resistance per cm of the wire (2 Ohm / 100cm)
 
-  const rLeft = useMemo(() => {
-    if (experimentMode === 'findX') {
-      return isSwapped ? trueX : knownR;
-    }
-    // findRho mode
-    return isSwapped ? 0 : knownR; // Copper strip has ~0 resistance
-  }, [isSwapped, knownR, trueX, experimentMode]);
-
-  const rRight = useMemo(() => {
-    if (experimentMode === 'findX') {
-      return isSwapped ? knownR : trueX;
-    }
-    // findRho mode
-    return isSwapped ? knownR : 0;
-  }, [isSwapped, knownR, trueX, experimentMode]);
-
   const balancePoint = useMemo(() => {
+    let rLeft, rRight;
+
+    if (experimentMode === 'findX') {
+      rLeft = isSwapped ? trueX : knownR;
+      rRight = isSwapped ? knownR : trueX;
+    } else { // findRho mode
+      rLeft = isSwapped ? 0 : knownR; // Copper strip has ~0 resistance
+      rRight = isSwapped ? knownR : 0;
+    }
+
     // Wheatstone bridge condition for Carey Foster: P/Q = (R_left_gap + R_wire_to_jockey) / (R_right_gap + R_wire_from_jockey)
     // Since P = Q = 10, the condition simplifies to: R_left_gap + R_wire_to_jockey = R_right_gap + R_wire_from_jockey
     // rLeft + l1 * WIRE_RESISTANCE_PER_CM = rRight + (100 - l1) * WIRE_RESISTANCE_PER_CM
@@ -87,7 +81,7 @@ export default function Home() {
     const resistanceDifference = rRight - rLeft;
     const balanceShift = resistanceDifference / (2 * WIRE_RESISTANCE_PER_CM);
     return 50 + balanceShift;
-  }, [rLeft, rRight]);
+  }, [isSwapped, knownR, trueX, experimentMode, WIRE_RESISTANCE_PER_CM]);
 
   const potentialDifference = useMemo(() => {
     const theoreticalJockeyPos = balancePoint;
@@ -359,5 +353,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
