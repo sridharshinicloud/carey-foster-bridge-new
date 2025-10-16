@@ -51,7 +51,7 @@ export default function Home() {
   const [experimentMode, setExperimentMode] = useState<ExperimentMode>('findX');
   const [isTrueValueRevealed, setIsTrueValueRevealed] = useState(false);
   const [newTrueXInput, setNewTrueXInput] = useState(trueX.toString());
-  const [isInstructionDialogOpen, setIsInstructionDialogOpen] = useState(false);
+  const [isInstructionDialogOpen, setIsInstructionDialogOpen] = useState(true);
   const [isValueLocked, setIsValueLocked] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
@@ -77,24 +77,20 @@ export default function Home() {
   }, [isSwapped, knownR, trueX, experimentMode]);
 
   const balancePoint = useMemo(() => {
-    // Let alpha and beta be the end-resistances.
-    // The condition for balance is (rLeft + alpha) / (rRight + beta + R_wire_rem) = R_wire_jockey / R_wire_rem
-    // For a simplified model without end corrections, the bridge balances when:
-    // rLeft / rRight = (P + R_wire_left) / (Q + R_wire_right)
-    // A simpler approximation for the Carey Foster bridge specifically is that the *difference* is what matters.
-    // X - R = rho * (l2 - l1_swapped)
-    // This implies that the balance point l1 is related to the resistance difference.
-    const totalWireResistance = WIRE_RESISTANCE_PER_CM * 100;
-    // The shift in balance point is proportional to the difference in resistances
-    const balanceShift = ((rRight - rLeft) / (2 * WIRE_RESISTANCE_PER_CM));
-    return 50 + balanceShift;
-  }, [rLeft, rRight]);
+    // The shift in balance point is proportional to the difference in resistances in the outer gaps.
+    const resistanceDifference = rLeft - rRight;
+    // The change in length (delta_l) from the center is (R1 - R2) / (2 * rho)
+    // The balance point l1 = 50 + delta_l
+    const balanceShift = resistanceDifference / (2 * WIRE_RESISTANCE_PER_CM);
+    return 50 - balanceShift;
+  }, [rLeft, rRight, WIRE_RESISTANCE_PER_CM]);
   
   const potentialDifference = useMemo(() => {
     const theoreticalJockeyPos = balancePoint;
     const diff = jockeyPos - theoreticalJockeyPos;
-    // This normalization factor can be tuned to control sensitivity
-    return diff / 10; 
+    // This normalization factor can be tuned to control sensitivity.
+    // A smaller divisor means higher sensitivity.
+    return diff / 5;
   }, [jockeyPos, balancePoint]);
 
   const handleRecord = useCallback(() => {
@@ -131,17 +127,18 @@ export default function Home() {
     setIsValueLocked(false);
     setTrueX(5.0);
     setNewTrueXInput('5.0');
-    setIsInstructionDialogOpen(false);
+    setIsInstructionDialogOpen(true);
   }, []);
 
   const handleModeChange = (mode: ExperimentMode) => {
     setExperimentMode(mode);
+    // Resetting state when mode changes for a clean slate
     setKnownR(5.0);
     setJockeyPos(50.0);
     setAiSuggestion('');
     setSelectedReadingId(null);
     setIsSwapped(false);
-    setIsTrueValueRevealed(false); // Keep reveal state per experiment
+    setIsTrueValueRevealed(false);
   }
 
   const selectedReading = useMemo(() => readings.find(r => r.id === selectedReadingId), [readings, selectedReadingId]);
@@ -149,7 +146,8 @@ export default function Home() {
   const calculatedXForAI = useMemo(() => {
     if(!selectedReading) return 0;
     const { rValue, l1 } = selectedReading;
-    if (experimentMode === 'findRho') return 0;
+    if (experimentMode === 'findRho') return 0; // Not applicable for rho
+    // This is a rough approximation for the AI, not the precise formula
     const approxX = rValue + (2 * l1 - 100) * WIRE_RESISTANCE_PER_CM;
     return approxX;
   }, [selectedReading, experimentMode, WIRE_RESISTANCE_PER_CM]);
@@ -310,3 +308,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
