@@ -30,6 +30,7 @@ export default function Home() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isSwapped, setIsSwapped] = useState(false);
   const [experimentMode, setExperimentMode] = useState<ExperimentMode>('findX');
+  const [isTrueValueRevealed, setIsTrueValueRevealed] = useState(false);
   const { toast } = useToast();
 
   const P = 10; // Fixed inner resistance
@@ -53,18 +54,11 @@ export default function Home() {
   }, [isSwapped, knownR, trueX, experimentMode]);
   
   const balancePoint = useMemo(() => {
-    // We assume P = Q. The balance condition is:
-    // (rLeft) / (rRight) = (l1*rho) / ((100-l1)*rho) assuming ideal bridge with no end resistances
-    // But for Carey Foster, the formula is l1 = 50 + (rRight - rLeft) / (2 * rho)
-    // This simplified model gives the ideal balance point on the wire.
     return 50 + (rRight - rLeft) / (2 * WIRE_RESISTANCE_PER_CM);
-  }, [rLeft, rRight]);
+  }, [rLeft, rRight, WIRE_RESISTANCE_PER_CM]);
 
   const potentialDifference = useMemo(() => {
     const theoreticalJockeyPos = balancePoint;
-    // The difference from the ideal balance point creates a potential difference
-    // This is a simplified model for visualization.
-    // A larger difference means a larger deflection. The divisor scales the effect.
     return (jockeyPos - theoreticalJockeyPos) / 25; // Normalization factor for deflection
   }, [jockeyPos, balancePoint]);
 
@@ -96,6 +90,7 @@ export default function Home() {
     setAiSuggestion('');
     setSelectedReadingId(null);
     setIsSwapped(false);
+    setIsTrueValueRevealed(false);
   }, []);
   
   const handleModeChange = (mode: ExperimentMode) => {
@@ -114,12 +109,10 @@ export default function Home() {
     if (experimentMode === 'findRho') return 0; // X is not relevant here
     
     // This is a rough approximation. The proper calculation needs two readings.
-    // P/Q = (R+l1*rho)/(X+(100-l1)*rho), assuming P=Q, R+l1*rho = X+(100-l1)*rho
-    // X = R + (2*l1 - 100) * rho
     const approxX = rValue + (2 * l1 - 100) * WIRE_RESISTANCE_PER_CM;
     return approxX;
 
-  }, [selectedReading, experimentMode]);
+  }, [selectedReading, experimentMode, WIRE_RESISTANCE_PER_CM]);
 
 
   const handleGetSuggestion = useCallback(async () => {
@@ -131,7 +124,6 @@ export default function Home() {
     const input: SuggestResistanceValuesInput = {
         R: selectedReading.rValue,
         l1: selectedReading.l1,
-        // The AI prompt expects l2, which is 100 - l1
         l2: 100 - selectedReading.l1,
         X: parseFloat(calculatedXForAI.toFixed(2))
     };
@@ -193,6 +185,8 @@ export default function Home() {
               trueXValue={trueX}
               experimentMode={experimentMode}
               wireResistancePerCm={WIRE_RESISTANCE_PER_CM}
+              isTrueValueRevealed={isTrueValueRevealed}
+              onRevealToggle={() => setIsTrueValueRevealed(prev => !prev)}
             />
           </div>
         </div>
