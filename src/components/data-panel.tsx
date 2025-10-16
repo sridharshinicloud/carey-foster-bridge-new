@@ -41,6 +41,8 @@ const suggestionFormSchema = z.object({
 const DataPanel: React.FC<DataPanelProps> = ({
   readings, selectedReadingId, onSelectReading, aiSuggestion, isAiLoading, onGetSuggestion, selectedReading, trueXValue, experimentMode, wireResistancePerCm, isTrueValueRevealed, onRevealToggle
 }) => {
+    const isFindXMode = experimentMode === 'findX';
+
   const form = useForm<z.infer<typeof suggestionFormSchema>>({
     resolver: zodResolver(suggestionFormSchema),
     defaultValues: { R: 5, l1: 50, X: 5 }
@@ -52,10 +54,10 @@ const DataPanel: React.FC<DataPanelProps> = ({
         R: selectedReading.rValue,
         l1: selectedReading.l1,
         // The concept of X for the AI form changes based on mode
-        X: experimentMode === 'findX' ? selectedReading.rValue : 0, 
+        X: isFindXMode ? selectedReading.rValue : 0, 
       });
     }
-  }, [selectedReading, form, experimentMode]);
+  }, [selectedReading, form, isFindXMode]);
 
   const onSubmit = () => {
     onGetSuggestion();
@@ -109,8 +111,6 @@ const DataPanel: React.FC<DataPanelProps> = ({
     }
     return { finalCalculatedRho: null, calculationErrorRho: "Requires one normal and one swapped reading.", deviationRho: null };
   }, [readings, experimentMode, wireResistancePerCm]);
-
-  const isFindXMode = experimentMode === 'findX';
 
   const renderCalculationResults = () => {
     if (isFindXMode) {
@@ -185,7 +185,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
         <Tabs defaultValue="data" className="flex-grow flex flex-col">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="data">Data Table</TabsTrigger>
-            <TabsTrigger value="ai">AI Help</TabsTrigger>
+            <TabsTrigger value="ai" disabled={!isFindXMode}>AI Help</TabsTrigger>
           </TabsList>
           <TabsContent value="data" className="mt-4 flex-grow">
             <Card className="h-full flex flex-col">
