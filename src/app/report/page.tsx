@@ -34,50 +34,95 @@ const ReportPage = () => {
     if (!reportData || !reportData.readings.findX) return { finalCalculatedX: null, calculationErrorX: null, deviationX: null };
     
     const findXReadings = reportData.readings.findX;
-    const normalReading = findXReadings.find(r => !r.isSwapped);
-    const swappedReading = findXReadings.find(r => r.isSwapped);
+    const normalReadings = findXReadings.filter(r => !r.isSwapped);
+    const swappedReadings = findXReadings.filter(r => r.isSwapped);
 
-    if (normalReading && swappedReading) {
-      if (normalReading.rValue !== swappedReading.rValue) {
-        return { finalCalculatedX: null, calculationErrorX: "R values must be the same for both readings.", deviationX: null };
-      }
-      const R = normalReading.rValue;
-      const l1_normal = normalReading.l1;
-      const l1_swapped = swappedReading.l1;
-      
-      const calculatedX = R + reportData.trueRho * (l1_swapped - l1_normal);
-      const deviation = reportData.trueX !== 0 ? ((calculatedX - reportData.trueX) / reportData.trueX) * 100 : 0;
-
-      return { finalCalculatedX: calculatedX, calculationErrorX: null, deviationX: deviation };
+    if (normalReadings.length === 0 || swappedReadings.length === 0) {
+      return { finalCalculatedX: null, calculationErrorX: "Requires at least one normal and one swapped reading.", deviationX: null };
     }
-    return { finalCalculatedX: null, calculationErrorX: "Requires one normal and one swapped reading.", deviationX: null };
+    
+    if (normalReadings.length !== swappedReadings.length) {
+      return { finalCalculatedX: null, calculationErrorX: "The number of normal and swapped readings must be equal.", deviationX: null };
+    }
+
+    const calculatedXs = [];
+    for (let i = 0; i < normalReadings.length; i++) {
+        const normalReading = normalReadings[i];
+        const swappedReading = swappedReadings.find(sr => sr.rValue === normalReading.rValue);
+        if (!swappedReading) {
+            return { finalCalculatedX: null, calculationErrorX: `No matching swapped reading found for R=${normalReading.rValue}.`, deviationX: null };
+        }
+        const R = normalReading.rValue;
+        const l1_normal = normalReading.l1;
+        const l1_swapped = swappedReading.l1;
+        
+        calculatedXs.push(R + reportData.trueRho * (l1_swapped - l1_normal));
+    }
+    
+    if(calculatedXs.length === 0) {
+      return { finalCalculatedX: null, calculationErrorX: "Could not calculate X. Ensure R values match between normal and swapped readings.", deviationX: null };
+    }
+
+    const averageX = calculatedXs.reduce((acc, val) => acc + val, 0) / calculatedXs.length;
+    const deviation = reportData.trueX !== 0 ? ((averageX - reportData.trueX) / reportData.trueX) * 100 : 0;
+
+    return { finalCalculatedX: averageX, calculationErrorX: null, deviationX: deviation };
   }, [reportData]);
 
   const { finalCalculatedRho, calculationErrorRho, deviationRho } = useMemo(() => {
     if (!reportData || !reportData.readings.findRho) return { finalCalculatedRho: null, calculationErrorRho: null, deviationRho: null };
     
     const findRhoReadings = reportData.readings.findRho;
-    const normalReading = findRhoReadings.find(r => !r.isSwapped); // R in left, Copper in right
-    const swappedReading = findRhoReadings.find(r => r.isSwapped); // Copper in left, R in right
+    const normalReadings = findRhoReadings.filter(r => !r.isSwapped);
+    const swappedReadings = findRhoReadings.filter(r => r.isSwapped);
 
-    if (normalReading && swappedReading) {
-      if (normalReading.rValue !== swappedReading.rValue) {
-        return { finalCalculatedRho: null, calculationErrorRho: "R values must be the same for both readings.", deviationRho: null };
-      }
-      const R = normalReading.rValue;
-      const l_normal = normalReading.l1;
-      const l_swapped = swappedReading.l1;
-
-      if (l_swapped - l_normal === 0) {
-        return { finalCalculatedRho: null, calculationErrorRho: "Balance points cannot be the same.", deviationRho: null };
-      }
-      
-      const calculatedRho = R / (l_swapped - l_normal);
-      const deviation = reportData.trueRho !== 0 ? ((calculatedRho - reportData.trueRho) / reportData.trueRho) * 100 : 0;
-      return { finalCalculatedRho: calculatedRho, calculationErrorRho: null, deviationRho: deviation };
+    if (normalReadings.length === 0 || swappedReadings.length === 0) {
+        return { finalCalculatedRho: null, calculationErrorRho: "Requires at least one normal and one swapped reading for calculation.", deviationRho: null };
     }
-    return { finalCalculatedRho: null, calculationErrorRho: "Requires one normal and one swapped reading.", deviationRho: null };
-  }, [reportData]);
+    
+    let totalRho = 0;
+    let- count = 0;
+
+    const pairedReadings: {normal: Reading, swapped: Reading}[] = [];
+    const usedSwappedIndices = new Set<number>();
+
+    // Pair up readings by matching R values
+    for (const normal of normalReadings) {
+        let foundMatch = false;
+        for (let i = 0; i < swappedReadings.length; i++) {
+            if (!usedSwappedIndices.has(i) && swappedReadings[i].rValue === normal.rValue) {
+                pairedReadings.push({ normal, swapped: swappedReadings[i] });
+                usedSwappedIndices.add(i);
+                foundMatch = true;
+                break;
+            }
+        }
+    }
+
+    if (pairedReadings.length === 0) {
+        return { finalCalculatedRho: null, calculationErrorRho: "No normal and swapped readings with matching R values found.", deviationRho: null };
+    }
+
+    const rhoCalculations = pairedReadings.map(({ normal, swapped }) => {
+        const R = normal.rValue;
+        const l_normal = normal.l1;
+        const l_swapped = swapped.l1;
+        
+        if (l_swapped - l_normal === 0) {
+            return null; // Invalid pair
+        }
+        return R / (l_swapped - l_normal);
+    }).filter(rho => rho !== null) as number[];
+
+    if (rhoCalculations.length === 0) {
+        return { finalCalculatedRho: null, calculationErrorRho: "Calculation resulted in division by zero. Ensure l1 values differ for paired readings.", deviationRho: null };
+    }
+
+    const averageRho = rhoCalculations.reduce((sum, rho) => sum + rho, 0) / rhoCalculations.length;
+    const deviation = reportData.trueRho !== 0 ? ((averageRho - reportData.trueRho) / reportData.trueRho) * 100 : 0;
+    
+    return { finalCalculatedRho: averageRho, calculationErrorRho: null, deviationRho: deviation };
+}, [reportData]);
 
   if (!reportData) {
     return <div className="flex items-center justify-center min-h-screen">Loading report...</div>;
