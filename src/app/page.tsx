@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SuggestResistanceValuesInput } from '@/ai/flows/suggest-resistance-values';
 import { useToast } from '@/hooks/use-toast';
@@ -23,20 +23,26 @@ import {
 import { Zap, Info, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export type Reading = {
   id: number;
   rValue: number;
   l1: number;
   l2: number;
-  isSwapped: boolean; // Tracks if R and X are swapped
+  isSwapped: boolean; 
 };
+
+export type ExperimentMode = 'findX' | 'findRho';
 
 export default function Home() {
   const [trueX, setTrueX] = useState(5.0);
   const [knownR, setKnownR] = useState(5.0);
   const [jockeyPos, setJockeyPos] = useState(50.0);
-  const [readings, setReadings] = useState<Reading[]>([]);
+  const [readings, setReadings] = useState<{ findX: Reading[]; findRho: Reading[] }>({
+    findX: [],
+    findRho: [],
+  });
   const [selectedReadingId, setSelectedReadingId] = useState<number | null>(null);
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -45,34 +51,34 @@ export default function Home() {
   const [newTrueXInput, setNewTrueXInput] = useState(trueX.toString());
   const [isInstructionDialogOpen, setIsInstructionDialogOpen] = useState(true);
   const [isValueLocked, setIsValueLocked] = useState(false);
+  const [experimentMode, setExperimentMode] = useState<ExperimentMode>('findX');
   const { toast } = useToast();
   const router = useRouter();
 
-  const P = 10; // Fixed inner resistance
-  const Q = 10; // Fixed inner resistance
-  const WIRE_RESISTANCE_PER_CM = 0.02; // rho, resistance per cm of the wire (2 Ohm / 100cm)
+  const P = 10; 
+  const Q = 10; 
+  const WIRE_RESISTANCE_PER_CM = 0.02; // rho
 
   const balancePoint = useMemo(() => {
-    const rLeft = isSwapped ? trueX : knownR;
-    const rRight = isSwapped ? knownR : trueX;
-    
-    // Wheatstone bridge condition for Carey Foster: P/Q = (R_left_gap + R_wire_to_jockey) / (R_right_gap + R_wire_from_jockey)
-    // Since P = Q = 10, the condition simplifies to: R_left_gap + R_wire_to_jockey = R_right_gap + R_wire_from_jockey
-    // rLeft + l1 * WIRE_RESISTANCE_PER_CM = rRight + (100 - l1) * WIRE_RESISTANCE_PER_CM
-    // rLeft + l1 * rho = rRight + 100*rho - l1*rho
-    // 2 * l1 * rho = rRight - rLeft + 100*rho
-    // l1 = (rRight - rLeft) / (2 * rho) + 50
+    let rLeft, rRight;
+
+    if (experimentMode === 'findX') {
+      rLeft = isSwapped ? trueX : knownR;
+      rRight = isSwapped ? knownR : trueX;
+    } else { // findRho
+      const copperStripResistance = 0;
+      rLeft = isSwapped ? copperStripResistance : knownR;
+      rRight = isSwapped ? knownR : copperStripResistance;
+    }
+
     const resistanceDifference = rRight - rLeft;
     const balanceShift = resistanceDifference / (2 * WIRE_RESISTANCE_PER_CM);
     return 50 + balanceShift;
-  }, [isSwapped, knownR, trueX, WIRE_RESISTANCE_PER_CM]);
+  }, [isSwapped, knownR, trueX, WIRE_RESISTANCE_PER_CM, experimentMode]);
 
   const potentialDifference = useMemo(() => {
     const theoreticalJockeyPos = balancePoint;
     const diff = jockeyPos - theoreticalJockeyPos;
-    // This normalization factor can be tuned to control sensitivity.
-    // A smaller divisor means higher sensitivity.
-    // The sensitivity should be very high to simulate a real galvanometer.
     const sensitivityFactor = 0.2;
     return diff / sensitivityFactor;
   }, [jockeyPos, balancePoint]);
@@ -80,7 +86,6 @@ export default function Home() {
 
   const handleRecord = useCallback(() => {
     const l1 = jockeyPos;
-
     const newReading: Reading = {
       id: Date.now(),
       rValue: knownR,
@@ -90,17 +95,18 @@ export default function Home() {
     };
     setReadings(prev =>
       produce(prev, draft => {
-        draft.push(newReading);
+        draft[experimentMode].push(newReading);
       })
     );
-  }, [jockeyPos, knownR, isSwapped]);
+    setSelectedReadingId(newReading.id);
+  }, [jockeyPos, knownR, isSwapped, experimentMode]);
 
   const handleSwap = () => {
     setIsSwapped(prev => !prev);
   };
 
   const handleReset = useCallback(() => {
-    setReadings([]);
+    setReadings({ findX: [], findRho: [] });
     setKnownR(5.0);
     setJockeyPos(50.0);
     setAiSuggestion('');
@@ -111,17 +117,18 @@ export default function Home() {
     setTrueX(5.0);
     setNewTrueXInput('5.0');
     setIsInstructionDialogOpen(true);
+    setExperimentMode('findX');
   }, []);
 
-  const selectedReading = useMemo(() => readings.find(r => r.id === selectedReadingId), [readings, selectedReadingId]);
+  const currentReadings = readings[experimentMode];
+  const selectedReading = useMemo(() => currentReadings.find(r => r.id === selectedReadingId), [currentReadings, selectedReadingId]);
 
   const calculatedXForAI = useMemo(() => {
-    if(!selectedReading) return 0;
+    if(!selectedReading || experimentMode !== 'findX') return 0;
     const { rValue, l1 } = selectedReading;
-    // This is a rough approximation for the AI, not the precise formula
     const approxX = rValue + (2 * l1 - 100) * WIRE_RESISTANCE_PER_CM;
     return approxX;
-  }, [selectedReading, WIRE_RESISTANCE_PER_CM]);
+  }, [selectedReading, WIRE_RESISTANCE_PER_CM, experimentMode]);
 
   const handleGetSuggestion = useCallback(async () => {
     if (!selectedReading) return;
@@ -170,13 +177,21 @@ export default function Home() {
 
   const handleGenerateReport = () => {
     const reportData = JSON.stringify({
-      readings: { findX: readings, findRho: [] }, // Keep structure for report page compatibility
+      readings: readings,
       trueX: trueX,
       trueRho: WIRE_RESISTANCE_PER_CM,
     });
     sessionStorage.setItem('reportData', reportData);
     router.push('/report');
   };
+  
+  const onTabChange = (value: string) => {
+    setExperimentMode(value as ExperimentMode);
+    setIsSwapped(false);
+    setSelectedReadingId(null);
+    setAiSuggestion('');
+  }
+
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -190,7 +205,7 @@ export default function Home() {
            </div>
            
            <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={handleGenerateReport} disabled={readings.length === 0}>
+            <Button variant="secondary" onClick={handleGenerateReport} disabled={readings.findX.length === 0 && readings.findRho.length === 0}>
                 <FileText className="mr-2 h-4 w-4" />
                 Generate Report
             </Button>
@@ -236,39 +251,88 @@ export default function Home() {
         </div>
       </header>
       <main className="flex-grow container mx-auto p-4 md:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          <div className="lg:col-span-3">
-            <BridgeSimulation
-              knownR={knownR}
-              onKnownRChange={setKnownR}
-              jockeyPos={jockeyPos}
-              onJockeyMove={setJockeyPos}
-              potentialDifference={potentialDifference}
-              onRecord={handleRecord}
-              onReset={handleReset}
-              isBalanced={Math.abs(potentialDifference) < 0.01}
-              isSwapped={isSwapped}
-              onSwap={handleSwap}
-              P={P}
-              Q={Q}
-            />
-          </div>
-          <div className="lg:col-span-2">
-            <DataPanel
-              readings={readings}
-              selectedReadingId={selectedReadingId}
-              onSelectReading={setSelectedReadingId}
-              aiSuggestion={aiSuggestion}
-              isAiLoading={isAiLoading}
-              onGetSuggestion={handleGetSuggestion}
-              selectedReading={selectedReading}
-              trueXValue={trueX}
-              wireResistancePerCm={WIRE_RESISTANCE_PER_CM}
-              isTrueValueRevealed={isTrueValueRevealed}
-              onRevealToggle={() => setIsTrueValueRevealed(prev => !prev)}
-            />
-          </div>
-        </div>
+        <Tabs value={experimentMode} onValueChange={onTabChange} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="findX">Find Unknown Resistance (X)</TabsTrigger>
+              <TabsTrigger value="findRho">Find Resistance/Length (ρ)</TabsTrigger>
+            </TabsList>
+            <TabsContent value="findX">
+               <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mt-4">
+                  <div className="lg:col-span-3">
+                    <BridgeSimulation
+                      knownR={knownR}
+                      onKnownRChange={setKnownR}
+                      jockeyPos={jockeyPos}
+                      onJockeyMove={setJockeyPos}
+                      potentialDifference={potentialDifference}
+                      onRecord={handleRecord}
+                      onReset={handleReset}
+                      isBalanced={Math.abs(potentialDifference) < 0.01}
+                      isSwapped={isSwapped}
+                      onSwap={handleSwap}
+                      P={P}
+                      Q={Q}
+                      experimentMode={experimentMode}
+                      trueX={trueX}
+                    />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <DataPanel
+                      readings={readings.findX}
+                      selectedReadingId={selectedReadingId}
+                      onSelectReading={setSelectedReadingId}
+                      aiSuggestion={aiSuggestion}
+                      isAiLoading={isAiLoading}
+                      onGetSuggestion={handleGetSuggestion}
+                      selectedReading={selectedReading}
+                      trueXValue={trueX}
+                      wireResistancePerCm={WIRE_RESISTANCE_PER_CM}
+                      isTrueValueRevealed={isTrueValueRevealed}
+                      onRevealToggle={() => setIsTrueValueRevealed(prev => !prev)}
+                      experimentMode={experimentMode}
+                    />
+                  </div>
+                </div>
+            </TabsContent>
+            <TabsContent value="findRho">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mt-4">
+                  <div className="lg:col-span-3">
+                    <BridgeSimulation
+                      knownR={knownR}
+                      onKnownRChange={setKnownR}
+                      jockeyPos={jockeyPos}
+                      onJockeyMove={setJockeyPos}
+                      potentialDifference={potentialDifference}
+                      onRecord={handleRecord}
+                      onReset={handleReset}
+                      isBalanced={Math.abs(potentialDifference) < 0.01}
+                      isSwapped={isSwapped}
+                      onSwap={handleSwap}
+                      P={P}
+                      Q={Q}
+                      experimentMode={experimentMode}
+                      trueX={trueX}
+                    />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <DataPanel
+                      readings={readings.findRho}
+                      selectedReadingId={selectedReadingId}
+                      onSelectReading={setSelectedReadingId}
+                      aiSuggestion={aiSuggestion}
+                      isAiLoading={isAiLoading}
+                      onGetSuggestion={handleGetSuggestion}
+                      selectedReading={selectedReading}
+                      trueXValue={trueX}
+                      wireResistancePerCm={WIRE_RESISTANCE_PER_CM}
+                      isTrueValueRevealed={isTrueValueRevealed}
+                      onRevealToggle={() => setIsTrueValueRevealed(prev => !prev)}
+                      experimentMode={experimentMode}
+                    />
+                  </div>
+                </div>
+            </TabsContent>
+        </Tabs>
       </main>
       <footer className="py-4 text-center text-sm text-muted-foreground border-t">
         <p>&copy; {new Date().getFullYear()} BridgeSim. A Virtual Physics Lab.</p>
@@ -276,5 +340,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

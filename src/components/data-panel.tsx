@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import type { Reading } from '@/app/page';
+import type { Reading, ExperimentMode } from '@/app/page';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Bot, Loader2, Repeat, Eye, EyeOff } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -15,6 +14,8 @@ import { z } from 'zod';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 
 interface DataPanelProps {
   readings: Reading[];
@@ -28,6 +29,7 @@ interface DataPanelProps {
   wireResistancePerCm: number;
   isTrueValueRevealed: boolean;
   onRevealToggle: () => void;
+  experimentMode: ExperimentMode;
 }
 
 const suggestionFormSchema = z.object({
@@ -38,7 +40,7 @@ const suggestionFormSchema = z.object({
 
 
 const DataPanel: React.FC<DataPanelProps> = ({
-  readings, selectedReadingId, onSelectReading, aiSuggestion, isAiLoading, onGetSuggestion, selectedReading, trueXValue, wireResistancePerCm, isTrueValueRevealed, onRevealToggle
+  readings, selectedReadingId, onSelectReading, aiSuggestion, isAiLoading, onGetSuggestion, selectedReading, trueXValue, wireResistancePerCm, isTrueValueRevealed, onRevealToggle, experimentMode
 }) => {
 
   const form = useForm<z.infer<typeof suggestionFormSchema>>({
@@ -48,22 +50,24 @@ const DataPanel: React.FC<DataPanelProps> = ({
 
   useEffect(() => {
     if (selectedReading) {
+      const approxX = experimentMode === 'findX' ? (selectedReading.rValue + (2 * selectedReading.l1 - 100) * wireResistancePerCm) : 0;
       form.reset({
         R: selectedReading.rValue,
         l1: selectedReading.l1,
-        X: selectedReading.rValue, 
+        X: approxX,
       });
     }
-  }, [selectedReading, form]);
+  }, [selectedReading, form, experimentMode, wireResistancePerCm]);
 
   const onSubmit = () => {
     onGetSuggestion();
   };
   
   const { finalCalculatedX, calculationErrorX, deviationX } = useMemo(() => {
-    const findXReadings = readings.filter(r => r.isSwapped !== undefined);
-    const normalReading = findXReadings.find(r => !r.isSwapped);
-    const swappedReading = findXReadings.find(r => r.isSwapped);
+    if (experimentMode !== 'findX') return { finalCalculatedX: null, calculationErrorX: null, deviationX: null };
+    
+    const normalReading = readings.find(r => !r.isSwapped);
+    const swappedReading = readings.find(r => r.isSwapped);
 
     if (normalReading && swappedReading) {
       if (normalReading.rValue !== swappedReading.rValue) {
@@ -79,57 +83,104 @@ const DataPanel: React.FC<DataPanelProps> = ({
       return { finalCalculatedX: calculatedX, calculationErrorX: null, deviationX: deviation };
     }
     return { finalCalculatedX: null, calculationErrorX: "Requires one normal and one swapped reading.", deviationX: null };
-  }, [readings, wireResistancePerCm, trueXValue]);
+  }, [readings, wireResistancePerCm, trueXValue, experimentMode]);
+
+  const { finalCalculatedRho, calculationErrorRho } = useMemo(() => {
+    if (experimentMode !== 'findRho' || readings.length < 2) return { finalCalculatedRho: null, calculationErrorRho: "Requires paired readings." };
+    
+    const normalReadings = readings.filter(r => !r.isSwapped);
+    const swappedReadings = readings.filter(r => r.isSwapped);
+    
+    const rhos = [];
+    for (const rNormal of normalReadings) {
+        const rSwapped = swappedReadings.find(r => r.rValue === rNormal.rValue);
+        if (rSwapped) {
+            const rho = rNormal.rValue / (rSwapped.l1 - rNormal.l1);
+            if(isFinite(rho)) rhos.push(rho);
+        }
+    }
+
+    if(rhos.length > 0) {
+        const avgRho = rhos.reduce((a, b) => a + b, 0) / rhos.length;
+        return { finalCalculatedRho: avgRho, calculationErrorRho: null };
+    }
+
+    return { finalCalculatedRho: null, calculationErrorRho: "No matching normal/swapped pairs." };
+  }, [readings, experimentMode]);
+
 
   const renderCalculationResults = () => {
-      const isCalculated = finalCalculatedX !== null;
-      return (
-        <>
-          <div className="font-semibold flex justify-between">
-              <span>Final Calculated X:</span>
-              {isCalculated ? (
-                  <span>{finalCalculatedX.toFixed(2)} Ω</span>
-              ) : (
-                  <span className="text-xs text-muted-foreground">{calculationErrorX}</span>
-              )}
-          </div>
-          <div className="font-semibold flex justify-between items-center">
-              <span>True Value of X:</span>
-              {isTrueValueRevealed ? (
-                <div className='flex items-center gap-2'>
-                  {isCalculated && deviationX !== null && (
-                    <Badge variant={Math.abs(deviationX) < 5 ? "secondary" : "destructive"}>
-                      {deviationX.toFixed(1)}% dev.
-                    </Badge>
-                  )}
-                  <span>{trueXValue.toFixed(2)} Ω</span>
-                </div>
-              ) : (
-                <span>? Ω</span>
-              )}
-          </div>
-        </>
-      );
+      if (experimentMode === 'findX') {
+        const isCalculated = finalCalculatedX !== null;
+        return (
+          <>
+            <div className="font-semibold flex justify-between">
+                <span>Final Calculated X:</span>
+                {isCalculated ? (
+                    <span>{finalCalculatedX.toFixed(4)} Ω</span>
+                ) : (
+                    <span className="text-xs text-muted-foreground">{calculationErrorX}</span>
+                )}
+            </div>
+            <div className="font-semibold flex justify-between items-center">
+                <span>True Value of X:</span>
+                {isTrueValueRevealed ? (
+                  <div className='flex items-center gap-2'>
+                    {isCalculated && deviationX !== null && (
+                      <Badge variant={Math.abs(deviationX) < 5 ? "secondary" : "destructive"}>
+                        {deviationX.toFixed(1)}% dev.
+                      </Badge>
+                    )}
+                    <span>{trueXValue.toFixed(4)} Ω</span>
+                  </div>
+                ) : (
+                  <span>? Ω</span>
+                )}
+            </div>
+            <Button onClick={onRevealToggle} variant="outline" size="sm" className="w-full mt-2">
+                {isTrueValueRevealed ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                {isTrueValueRevealed ? 'Hide True Value' : 'Reveal True Value'}
+            </Button>
+          </>
+        );
+      }
+      if (experimentMode === 'findRho') {
+        return (
+             <div className="font-semibold flex justify-between">
+                <span>Calculated ρ:</span>
+                {finalCalculatedRho !== null ? (
+                    <span>{finalCalculatedRho.toFixed(4)} Ω/cm</span>
+                ) : (
+                    <span className="text-xs text-muted-foreground">{calculationErrorRho}</span>
+                )}
+            </div>
+        )
+      }
+      return null;
   }
 
 
   return (
-    <Card className="w-full flex flex-col">
+    <Card className="w-full flex flex-col h-full">
       <CardHeader>
         <CardTitle className="font-headline">Analysis</CardTitle>
-        <CardDescription>Review your data and perform calculations.</CardDescription>
+        <CardDescription>Review your data and get help.</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col">
         <Tabs defaultValue="data" className="flex-grow flex flex-col">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="data">Data Table</TabsTrigger>
-            <TabsTrigger value="ai">AI Help</TabsTrigger>
+            <TabsTrigger value="ai" disabled={experimentMode === 'findRho'}>AI Help</TabsTrigger>
           </TabsList>
-          <TabsContent value="data" className="mt-4 flex-grow">
+          <TabsContent value="data" className="mt-4 flex-grow flex flex-col">
             <Card className="h-full flex flex-col">
               <ScrollArea className="flex-grow">
                 <Table>
-                  <TableCaption>Record a reading in both normal and swapped positions.</TableCaption>
+                  <TableCaption>
+                    {experimentMode === 'findX' 
+                      ? "Record a reading in both normal and swapped positions." 
+                      : "Record readings for different R values in normal and swapped positions."}
+                  </TableCaption>
                   <TableHeader className="sticky top-0 bg-card z-10">
                     <TableRow>
                       <TableHead>R (Ω)</TableHead>
@@ -165,10 +216,6 @@ const DataPanel: React.FC<DataPanelProps> = ({
               </ScrollArea>
               <div className="p-4 border-t space-y-3 bg-muted/50">
                  {renderCalculationResults()}
-                 <Button onClick={onRevealToggle} variant="outline" size="sm" className="w-full">
-                    {isTrueValueRevealed ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                    {isTrueValueRevealed ? 'Hide True Value' : 'Reveal True Value'}
-                 </Button>
               </div>
             </Card>
           </TabsContent>
@@ -235,5 +282,3 @@ const DataPanel: React.FC<DataPanelProps> = ({
 };
 
 export default DataPanel;
-
-    

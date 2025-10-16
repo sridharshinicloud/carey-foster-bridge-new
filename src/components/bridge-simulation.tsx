@@ -9,6 +9,7 @@ import { Zap, Save, RefreshCw, AlertCircle, HelpCircle, Settings, Repeat } from 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
+import type { ExperimentMode } from '@/app/page';
 
 
 interface ResistanceBoxProps {
@@ -48,10 +49,12 @@ interface BridgeSimulationProps {
   onSwap: () => void;
   P: number;
   Q: number;
+  experimentMode: ExperimentMode;
+  trueX: number;
 }
 
 const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
-  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced, isSwapped, onSwap, P, Q
+  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced, isSwapped, onSwap, P, Q, experimentMode, trueX
 }) => {
   const wireRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -82,8 +85,26 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
   
   const needleRotation = Math.max(-45, Math.min(45, potentialDifference));
 
-  const rBoxLabel = isSwapped ? "X" : "R";
-  const xBoxLabel = isSwapped ? "R" : "X";
+  let rBoxLabel = "?";
+  let xBoxLabel = "?";
+  let rBoxValue: string | number = "?";
+  let xBoxValue: string | number = "?";
+
+  if (experimentMode === 'findX') {
+    rBoxLabel = isSwapped ? "X" : "R";
+    xBoxLabel = isSwapped ? "R" : "X";
+    rBoxValue = isSwapped ? '?' : knownR;
+    xBoxValue = isSwapped ? knownR : '?';
+  } else { // findRho
+    rBoxLabel = isSwapped ? "Cu Strip" : "R";
+    xBoxLabel = isSwapped ? "R" : "Cu Strip";
+    rBoxValue = isSwapped ? '0.0 Ω' : knownR;
+    xBoxValue = isSwapped ? knownR : '0.0 Ω';
+  }
+
+  const rIcon = experimentMode === 'findX' && !isSwapped ? Zap : experimentMode === 'findRho' && !isSwapped ? Zap : (experimentMode === 'findRho' && isSwapped) ? HelpCircle : HelpCircle;
+  const xIcon = experimentMode === 'findX' && isSwapped ? Zap : experimentMode === 'findRho' && isSwapped ? Zap : (experimentMode === 'findRho' && !isSwapped) ? HelpCircle : HelpCircle;
+
 
   return (
     <Card className="w-full">
@@ -145,8 +166,8 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
           <div className="relative aspect-[16/10] w-full rounded-lg bg-muted/30 border-2 border-dashed p-4 flex flex-col justify-end">
             
             {/* Resistors */}
-            <ResistanceBox label={rBoxLabel} value={isSwapped ? '?' : knownR} Icon={isSwapped ? HelpCircle : Zap} position="left" />
-            <ResistanceBox label={xBoxLabel} value={isSwapped ? knownR : '?'} Icon={isSwapped ? Zap : HelpCircle} position="right" />
+            <ResistanceBox label={rBoxLabel} value={rBoxValue} Icon={rIcon} position="left" />
+            <ResistanceBox label={xBoxLabel} value={xBoxValue} Icon={xIcon} position="right" />
             <ResistanceBox label="P" value={P} Icon={Settings} position="inner-left" />
             <ResistanceBox label="Q" value={Q} Icon={Settings} position="inner-right" />
             
@@ -228,5 +249,3 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
 };
 
 export default BridgeSimulation;
-
-    
