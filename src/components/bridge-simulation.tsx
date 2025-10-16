@@ -163,12 +163,6 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
             <ResistanceBox label={isFindXMode ? xBoxLabel : (isSwapped ? "R" : "Copper Strip")} value={isSwapped ? knownR : (isFindXMode ? '?' : '0.0 Ω')} Icon={isFindXMode ? (isSwapped ? Zap : HelpCircle) : Sigma} position="right" />
             <ResistanceBox label="P" value={P} Icon={Settings} position="inner-left" />
             <ResistanceBox label="Q" value={Q} Icon={Settings} position="inner-right" />
-
-            {/* Wires */}
-            <div className="absolute top-8 left-1/2 -translate-x-1/2 w-48 h-20">
-                <svg width="100%" height="100%" viewBox="0 0 192 80" className="overflow-visible">
-                </svg>
-            </div>
             
              {/* Battery and Key - Visual only */}
             <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-1">
@@ -193,7 +187,7 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
               </div>
                {/* Jockey */}
                 <div
-                  className="absolute top-1/2 -translate-y-1/2 w-3 h-6 bg-accent rounded-sm shadow-lg cursor-ew-resize transition-all duration-75"
+                  className="absolute top-1/2 w-3 h-6 bg-accent rounded-sm shadow-lg cursor-ew-resize transition-all duration-75"
                   style={{ left: `${jockeyPos}%`, transform: 'translateX(-50%)' }}
                   onMouseDown={() => setIsDragging(true)}
                 >
