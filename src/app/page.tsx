@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SuggestResistanceValuesInput } from '@/ai/flows/suggest-resistance-values';
 import { useToast } from '@/hooks/use-toast';
@@ -78,7 +78,7 @@ export default function Home() {
 
   const balancePoint = useMemo(() => {
     // Wheatstone bridge condition for Carey Foster: P/Q = (R_left_gap + R_wire_to_jockey) / (R_right_gap + R_wire_from_jockey)
-    // P = Q = 10, so R_left_gap + R_wire_to_jockey = R_right_gap + R_wire_from_jockey
+    // Since P = Q = 10, the condition simplifies to: R_left_gap + R_wire_to_jockey = R_right_gap + R_wire_from_jockey
     // rLeft + l1 * WIRE_RESISTANCE_PER_CM = rRight + (100 - l1) * WIRE_RESISTANCE_PER_CM
     // rLeft + l1 * rho = rRight + 100*rho - l1*rho
     // 2 * l1 * rho = rRight - rLeft + 100*rho
@@ -87,7 +87,7 @@ export default function Home() {
     const balanceShift = resistanceDifference / (2 * WIRE_RESISTANCE_PER_CM);
     return 50 + balanceShift;
   }, [rLeft, rRight, WIRE_RESISTANCE_PER_CM]);
-  
+
   const potentialDifference = useMemo(() => {
     const theoreticalJockeyPos = balancePoint;
     const diff = jockeyPos - theoreticalJockeyPos;
@@ -95,6 +95,7 @@ export default function Home() {
     // A smaller divisor means higher sensitivity.
     return diff / 5;
   }, [jockeyPos, balancePoint]);
+
 
   const handleRecord = useCallback(() => {
     const l1 = jockeyPos;
