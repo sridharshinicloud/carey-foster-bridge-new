@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import type { SuggestResistanceValuesInput } from '@/ai/flows/suggest-resistance-values';
 import { useToast } from '@/hooks/use-toast';
 import { getAiSuggestion } from '@/app/actions';
@@ -19,10 +20,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Zap, Info } from 'lucide-react';
+import { Zap, Info, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
 
 export type Reading = {
   id: number;
@@ -34,11 +34,16 @@ export type Reading = {
 
 export type ExperimentMode = 'findX' | 'findRho';
 
+export type AllReadings = {
+  findX: Reading[];
+  findRho: Reading[];
+};
+
 export default function Home() {
   const [trueX, setTrueX] = useState(5.0);
   const [knownR, setKnownR] = useState(5.0);
   const [jockeyPos, setJockeyPos] = useState(50.0);
-  const [readings, setReadings] = useState<Reading[]>([]);
+  const [allReadings, setAllReadings] = useState<AllReadings>({ findX: [], findRho: [] });
   const [selectedReadingId, setSelectedReadingId] = useState<number | null>(null);
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -47,11 +52,12 @@ export default function Home() {
   const [isTrueValueRevealed, setIsTrueValueRevealed] = useState(false);
   const [newTrueXInput, setNewTrueXInput] = useState(trueX.toString());
   const { toast } = useToast();
+  const router = useRouter();
 
   const P = 10; // Fixed inner resistance
   const Q = 10; // Fixed inner resistance
   const WIRE_RESISTANCE_PER_CM = 0.02; // rho, resistance per cm of the wire (2 Ohm / 100cm)
-  
+
   const rLeft = useMemo(() => {
     if (experimentMode === 'findX') {
       return isSwapped ? trueX : knownR;
@@ -67,10 +73,9 @@ export default function Home() {
     // findRho mode
     return isSwapped ? knownR : 0;
   }, [isSwapped, knownR, trueX, experimentMode]);
-  
+
   const balancePoint = useMemo(() => {
     const totalWireResistance = WIRE_RESISTANCE_PER_CM * 100;
-    // Simplified bridge balance condition for center-tapped wire
     return 50 * (1 + (rLeft - rRight) / totalWireResistance);
   }, [rLeft, rRight]);
 
@@ -89,19 +94,21 @@ export default function Home() {
       l2: parseFloat((100 - l1).toFixed(2)),
       isSwapped: isSwapped,
     };
-    setReadings(prev => 
+    setAllReadings(prev =>
       produce(prev, draft => {
-        draft.push(newReading);
+        draft[experimentMode].push(newReading);
       })
     );
-  }, [jockeyPos, knownR, isSwapped]);
-  
+  }, [jockeyPos, knownR, isSwapped, experimentMode]);
+
   const handleSwap = () => {
     setIsSwapped(prev => !prev);
   };
+  
+  const readings = useMemo(() => allReadings[experimentMode], [allReadings, experimentMode]);
 
   const handleReset = useCallback(() => {
-    setReadings([]);
+    setAllReadings({ findX: [], findRho: [] });
     setKnownR(5.0);
     setJockeyPos(50.0);
     setAiSuggestion('');
@@ -109,28 +116,26 @@ export default function Home() {
     setIsSwapped(false);
     setIsTrueValueRevealed(false);
   }, []);
-  
+
   const handleModeChange = (mode: ExperimentMode) => {
     setExperimentMode(mode);
-    // Reset relevant state when mode changes
-    handleReset();
+    setKnownR(5.0);
+    setJockeyPos(50.0);
+    setAiSuggestion('');
+    setSelectedReadingId(null);
+    setIsSwapped(false);
+    setIsTrueValueRevealed(false); // Keep reveal state per experiment
   }
 
   const selectedReading = useMemo(() => readings.find(r => r.id === selectedReadingId), [readings, selectedReadingId]);
-  
-  // This is a simplified calculation for the AI prompt, not the primary result
+
   const calculatedXForAI = useMemo(() => {
     if(!selectedReading) return 0;
     const { rValue, l1 } = selectedReading;
-    // Basic Wheatstone bridge formula approximation for a single reading
-    if (experimentMode === 'findRho') return 0; // X is not relevant here
-    
-    // This is a rough approximation. The proper calculation needs two readings.
+    if (experimentMode === 'findRho') return 0;
     const approxX = rValue + (2 * l1 - 100) * WIRE_RESISTANCE_PER_CM;
     return approxX;
-
   }, [selectedReading, experimentMode, WIRE_RESISTANCE_PER_CM]);
-
 
   const handleGetSuggestion = useCallback(async () => {
     if (!selectedReading) return;
@@ -175,6 +180,16 @@ export default function Home() {
     }
   };
 
+  const handleGenerateReport = () => {
+    const reportData = JSON.stringify({
+      readings: allReadings,
+      trueX: trueXValue,
+      trueRho: WIRE_RESISTANCE_PER_CM,
+    });
+    sessionStorage.setItem('reportData', reportData);
+    router.push('/report');
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header className="py-4 border-b">
@@ -186,6 +201,12 @@ export default function Home() {
               <h1 className="text-2xl font-bold font-headline">BridgeSim</h1>
            </div>
            
+           <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={handleGenerateReport} disabled={allReadings.findX.length === 0 && allReadings.findRho.length === 0}>
+                <FileText className="mr-2 h-4 w-4" />
+                Generate Report
+            </Button>
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -222,6 +243,8 @@ export default function Home() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+           </div>
+
         </div>
       </header>
       <main className="flex-grow container mx-auto p-4 md:p-8">

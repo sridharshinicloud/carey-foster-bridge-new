@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import type { Reading, ExperimentMode } from '@/app/page';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
@@ -207,9 +207,9 @@ const DataPanel: React.FC<DataPanelProps> = ({
                         className={cn("cursor-pointer", selectedReadingId === reading.id && 'bg-primary/10')}
                         onClick={() => onSelectReading(reading.id)}
                       >
-                        <TableCell>{reading.rValue}</TableCell>
-                        <TableCell>{reading.l1}</TableCell>
-                        <TableCell>{reading.l2}</TableCell>
+                        <TableCell>{reading.rValue.toFixed(2)}</TableCell>
+                        <TableCell>{reading.l1.toFixed(2)}</TableCell>
+                        <TableCell>{reading.l2.toFixed(2)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                              {reading.isSwapped ? <Repeat className="w-4 h-4 text-blue-500" /> : <div className="w-4 h-4"/>}
@@ -247,21 +247,21 @@ const DataPanel: React.FC<DataPanelProps> = ({
                         <FormField control={form.control} name="R" render={({ field }) => (
                             <FormItem>
                               <FormLabel>R (Ω)</FormLabel>
-                              <FormControl><Input readOnly type="number" {...field} /></FormControl>
+                              <FormControl><Input readOnly type="number" {...field} value={field.value.toFixed(2)}/></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
                         <FormField control={form.control} name="l1" render={({ field }) => (
                             <FormItem>
                               <FormLabel>l₁ (cm)</FormLabel>
-                              <FormControl><Input readOnly type="number" {...field} /></FormControl>
+                              <FormControl><Input readOnly type="number" {...field} value={field.value.toFixed(2)}/></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
                          <FormField control={form.control} name="X" render={({ field }) => (
                             <FormItem>
                               <FormLabel>Approx. X (Ω)</FormLabel>
-                              <FormControl><Input readOnly type="number" {...field} /></FormControl>
+                              <FormControl><Input readOnly type="number" {...field} value={field.value.toFixed(2)}/></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />

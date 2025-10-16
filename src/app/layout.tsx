@@ -1,4 +1,5 @@
 import type {Metadata} from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
@@ -6,6 +7,8 @@ export const metadata: Metadata = {
   title: 'BridgeSim',
   description: 'A virtual physics lab simulating a Carey Foster bridge experiment.',
 };
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function RootLayout({
   children,
