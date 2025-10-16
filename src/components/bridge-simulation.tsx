@@ -8,8 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Zap, Save, RefreshCw, AlertCircle, HelpCircle, Settings, Repeat, Sigma } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 
@@ -52,11 +50,10 @@ interface BridgeSimulationProps {
   P: number;
   Q: number;
   experimentMode: ExperimentMode;
-  onModeChange: (mode: ExperimentMode) => void;
 }
 
 const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
-  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced, isSwapped, onSwap, P, Q, experimentMode, onModeChange
+  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced, isSwapped, onSwap, P, Q, experimentMode
 }) => {
   const wireRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -85,7 +82,7 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
   
-  const needleRotation = Math.max(-45, Math.min(45, potentialDifference * 45));
+  const needleRotation = Math.max(-45, Math.min(45, potentialDifference));
 
   const rBoxLabel = isSwapped ? "X" : "R";
   const xBoxLabel = isSwapped ? "R" : "X";
@@ -96,19 +93,9 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="font-headline">Experiment Setup</CardTitle>
-        <CardDescription>Select an experiment, adjust resistances, and slide the jockey to find the balance points.</CardDescription>
+        <CardDescription>Adjust resistances and slide the jockey to find the balance points.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex items-center space-x-2">
-            <Label htmlFor="mode-switch">Find Unknown Resistance (X)</Label>
-            <Switch
-                id="mode-switch"
-                checked={!isFindXMode}
-                onCheckedChange={(checked) => onModeChange(checked ? 'findRho' : 'findX')}
-            />
-            <Label htmlFor="mode-switch">Find Resistance/Length (ρ)</Label>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
             <div className="space-y-3">
               <TooltipProvider>

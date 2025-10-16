@@ -23,6 +23,7 @@ import {
 import { Zap, Info, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export type Reading = {
   id: number;
@@ -88,12 +89,14 @@ export default function Home() {
     return 50 + balanceShift;
   }, [rLeft, rRight, WIRE_RESISTANCE_PER_CM]);
 
-  const potentialDifference = useMemo(() => {
+    const potentialDifference = useMemo(() => {
     const theoreticalJockeyPos = balancePoint;
     const diff = jockeyPos - theoreticalJockeyPos;
     // This normalization factor can be tuned to control sensitivity.
     // A smaller divisor means higher sensitivity.
-    return diff / 5;
+    // The sensitivity should be very high to simulate a real galvanometer.
+    const sensitivityFactor = 0.2;
+    return diff / sensitivityFactor;
   }, [jockeyPos, balancePoint]);
 
 
@@ -269,42 +272,86 @@ export default function Home() {
         </div>
       </header>
       <main className="flex-grow container mx-auto p-4 md:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          <div className="lg:col-span-3">
-            <BridgeSimulation
-              knownR={knownR}
-              onKnownRChange={setKnownR}
-              jockeyPos={jockeyPos}
-              onJockeyMove={setJockeyPos}
-              potentialDifference={potentialDifference}
-              onRecord={handleRecord}
-              onReset={handleReset}
-              isBalanced={Math.abs(potentialDifference) < 0.01}
-              isSwapped={isSwapped}
-              onSwap={handleSwap}
-              P={P}
-              Q={Q}
-              experimentMode={experimentMode}
-              onModeChange={handleModeChange}
-            />
-          </div>
-          <div className="lg:col-span-2">
-            <DataPanel
-              readings={readings}
-              selectedReadingId={selectedReadingId}
-              onSelectReading={setSelectedReadingId}
-              aiSuggestion={aiSuggestion}
-              isAiLoading={isAiLoading}
-              onGetSuggestion={handleGetSuggestion}
-              selectedReading={selectedReading}
-              trueXValue={trueX}
-              experimentMode={experimentMode}
-              wireResistancePerCm={WIRE_RESISTANCE_PER_CM}
-              isTrueValueRevealed={isTrueValueRevealed}
-              onRevealToggle={() => setIsTrueValueRevealed(prev => !prev)}
-            />
-          </div>
-        </div>
+        <Tabs value={experimentMode} onValueChange={(value) => handleModeChange(value as ExperimentMode)} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="findX">Find Unknown Resistance (X)</TabsTrigger>
+            <TabsTrigger value="findRho">Find Resistance/Length (ρ)</TabsTrigger>
+          </TabsList>
+          <TabsContent value="findX" className="mt-4">
+             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+              <div className="lg:col-span-3">
+                <BridgeSimulation
+                  knownR={knownR}
+                  onKnownRChange={setKnownR}
+                  jockeyPos={jockeyPos}
+                  onJockeyMove={setJockeyPos}
+                  potentialDifference={potentialDifference}
+                  onRecord={handleRecord}
+                  onReset={handleReset}
+                  isBalanced={Math.abs(potentialDifference) < 0.01}
+                  isSwapped={isSwapped}
+                  onSwap={handleSwap}
+                  P={P}
+                  Q={Q}
+                  experimentMode={experimentMode}
+                />
+              </div>
+              <div className="lg:col-span-2">
+                <DataPanel
+                  readings={readings}
+                  selectedReadingId={selectedReadingId}
+                  onSelectReading={setSelectedReadingId}
+                  aiSuggestion={aiSuggestion}
+                  isAiLoading={isAiLoading}
+                  onGetSuggestion={handleGetSuggestion}
+                  selectedReading={selectedReading}
+                  trueXValue={trueX}
+                  experimentMode={experimentMode}
+                  wireResistancePerCm={WIRE_RESISTANCE_PER_CM}
+                  isTrueValueRevealed={isTrueValueRevealed}
+                  onRevealToggle={() => setIsTrueValueRevealed(prev => !prev)}
+                />
+              </div>
+            </div>
+          </TabsContent>
+          <TabsContent value="findRho" className="mt-4">
+             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div className="lg:col-span-3">
+                  <BridgeSimulation
+                    knownR={knownR}
+                    onKnownRChange={setKnownR}
+                    jockeyPos={jockeyPos}
+                    onJockeyMove={setJockeyPos}
+                    potentialDifference={potentialDifference}
+                    onRecord={handleRecord}
+                    onReset={handleReset}
+                    isBalanced={Math.abs(potentialDifference) < 0.01}
+                    isSwapped={isSwapped}
+                    onSwap={handleSwap}
+                    P={P}
+                    Q={Q}
+                    experimentMode={experimentMode}
+                  />
+                </div>
+                <div className="lg:col-span-2">
+                  <DataPanel
+                    readings={readings}
+                    selectedReadingId={selectedReadingId}
+                    onSelectReading={setSelectedReadingId}
+                    aiSuggestion={aiSuggestion}
+                    isAiLoading={isAiLoading}
+                    onGetSuggestion={handleGetSuggestion}
+                    selectedReading={selectedReading}
+                    trueXValue={trueX}
+                    experimentMode={experimentMode}
+                    wireResistancePerCm={WIRE_RESISTANCE_PER_CM}
+                    isTrueValueRevealed={isTrueValueRevealed}
+                    onRevealToggle={() => setIsTrueValueRevealed(prev => !prev)}
+                  />
+                </div>
+              </div>
+          </TabsContent>
+        </Tabs>
       </main>
       <footer className="py-4 text-center text-sm text-muted-foreground border-t">
         <p>&copy; {new Date().getFullYear()} BridgeSim. A Virtual Physics Lab.</p>
