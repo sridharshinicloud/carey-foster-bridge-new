@@ -77,13 +77,24 @@ export default function Home() {
   }, [isSwapped, knownR, trueX, experimentMode]);
 
   const balancePoint = useMemo(() => {
+    // Let alpha and beta be the end-resistances.
+    // The condition for balance is (rLeft + alpha) / (rRight + beta + R_wire_rem) = R_wire_jockey / R_wire_rem
+    // For a simplified model without end corrections, the bridge balances when:
+    // rLeft / rRight = (P + R_wire_left) / (Q + R_wire_right)
+    // A simpler approximation for the Carey Foster bridge specifically is that the *difference* is what matters.
+    // X - R = rho * (l2 - l1_swapped)
+    // This implies that the balance point l1 is related to the resistance difference.
     const totalWireResistance = WIRE_RESISTANCE_PER_CM * 100;
-    return 50 * (1 + (rLeft - rRight) / totalWireResistance);
+    // The shift in balance point is proportional to the difference in resistances
+    const balanceShift = ((rRight - rLeft) / (2 * WIRE_RESISTANCE_PER_CM));
+    return 50 + balanceShift;
   }, [rLeft, rRight]);
-
+  
   const potentialDifference = useMemo(() => {
     const theoreticalJockeyPos = balancePoint;
-    return (jockeyPos - theoreticalJockeyPos) / 25; // Normalization factor for deflection
+    const diff = jockeyPos - theoreticalJockeyPos;
+    // This normalization factor can be tuned to control sensitivity
+    return diff / 10; 
   }, [jockeyPos, balancePoint]);
 
   const handleRecord = useCallback(() => {
@@ -118,6 +129,9 @@ export default function Home() {
     setIsSwapped(false);
     setIsTrueValueRevealed(false);
     setIsValueLocked(false);
+    setTrueX(5.0);
+    setNewTrueXInput('5.0');
+    setIsInstructionDialogOpen(false);
   }, []);
 
   const handleModeChange = (mode: ExperimentMode) => {
