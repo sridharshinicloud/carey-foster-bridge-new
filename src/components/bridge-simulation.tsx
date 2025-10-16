@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import type { ExperimentMode } from '@/app/page';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Zap, Save, RefreshCw, AlertCircle, HelpCircle, Settings, Repeat, Sigma } from 'lucide-react';
+import { Zap, Save, RefreshCw, AlertCircle, HelpCircle, Settings, Repeat } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
@@ -49,11 +48,10 @@ interface BridgeSimulationProps {
   onSwap: () => void;
   P: number;
   Q: number;
-  experimentMode: ExperimentMode;
 }
 
 const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
-  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced, isSwapped, onSwap, P, Q, experimentMode
+  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced, isSwapped, onSwap, P, Q
 }) => {
   const wireRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -87,13 +85,11 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
   const rBoxLabel = isSwapped ? "X" : "R";
   const xBoxLabel = isSwapped ? "R" : "X";
 
-  const isFindXMode = experimentMode === 'findX';
-
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="font-headline">Experiment Setup</CardTitle>
-        <CardDescription>Adjust resistances and slide the jockey to find the balance points.</CardDescription>
+        <CardDescription>Adjust the resistance and slide the jockey to find the balance point.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
@@ -149,8 +145,8 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
           <div className="relative aspect-[16/10] w-full rounded-lg bg-muted/30 border-2 border-dashed p-4 flex flex-col justify-end">
             
             {/* Resistors */}
-            <ResistanceBox label={isFindXMode ? rBoxLabel : (isSwapped ? "Copper Strip" : "R")} value={isFindXMode ? (isSwapped ? '?' : knownR) : (isSwapped ? '0.0 Ω' : knownR)} Icon={isFindXMode ? (isSwapped ? HelpCircle : Zap) : (isSwapped ? Sigma : Zap)} position="left" />
-            <ResistanceBox label={isFindXMode ? xBoxLabel : (isSwapped ? "R" : "Copper Strip")} value={isSwapped ? knownR : (isFindXMode ? '?' : '0.0 Ω')} Icon={isFindXMode ? (isSwapped ? Zap : HelpCircle) : (isSwapped ? Zap : Sigma)} position="right" />
+            <ResistanceBox label={rBoxLabel} value={isSwapped ? '?' : knownR} Icon={isSwapped ? HelpCircle : Zap} position="left" />
+            <ResistanceBox label={xBoxLabel} value={isSwapped ? knownR : '?'} Icon={isSwapped ? Zap : HelpCircle} position="right" />
             <ResistanceBox label="P" value={P} Icon={Settings} position="inner-left" />
             <ResistanceBox label="Q" value={Q} Icon={Settings} position="inner-right" />
             
@@ -232,3 +228,5 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
 };
 
 export default BridgeSimulation;
+
+    

@@ -2,13 +2,17 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import type { AllReadings, Reading } from '@/app/page';
+import type { Reading } from '@/app/page';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Printer, ArrowLeft } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+
+type AllReadings = {
+  findX: Reading[];
+  findRho: Reading[];
+};
 
 type ReportData = {
   readings: AllReadings;
@@ -68,61 +72,6 @@ const ReportPage = () => {
 
     return { finalCalculatedX: averageX, calculationErrorX: null, deviationX: deviation };
   }, [reportData]);
-
-  const { finalCalculatedRho, calculationErrorRho, deviationRho } = useMemo(() => {
-    if (!reportData || !reportData.readings.findRho) return { finalCalculatedRho: null, calculationErrorRho: null, deviationRho: null };
-    
-    const findRhoReadings = reportData.readings.findRho;
-    const normalReadings = findRhoReadings.filter(r => !r.isSwapped);
-    const swappedReadings = findRhoReadings.filter(r => r.isSwapped);
-
-    if (normalReadings.length === 0 || swappedReadings.length === 0) {
-        return { finalCalculatedRho: null, calculationErrorRho: "Requires at least one normal and one swapped reading for calculation.", deviationRho: null };
-    }
-    
-    let totalRho = 0;
-    let- count = 0;
-
-    const pairedReadings: {normal: Reading, swapped: Reading}[] = [];
-    const usedSwappedIndices = new Set<number>();
-
-    // Pair up readings by matching R values
-    for (const normal of normalReadings) {
-        let foundMatch = false;
-        for (let i = 0; i < swappedReadings.length; i++) {
-            if (!usedSwappedIndices.has(i) && swappedReadings[i].rValue === normal.rValue) {
-                pairedReadings.push({ normal, swapped: swappedReadings[i] });
-                usedSwappedIndices.add(i);
-                foundMatch = true;
-                break;
-            }
-        }
-    }
-
-    if (pairedReadings.length === 0) {
-        return { finalCalculatedRho: null, calculationErrorRho: "No normal and swapped readings with matching R values found.", deviationRho: null };
-    }
-
-    const rhoCalculations = pairedReadings.map(({ normal, swapped }) => {
-        const R = normal.rValue;
-        const l_normal = normal.l1;
-        const l_swapped = swapped.l1;
-        
-        if (l_swapped - l_normal === 0) {
-            return null; // Invalid pair
-        }
-        return R / (l_swapped - l_normal);
-    }).filter(rho => rho !== null) as number[];
-
-    if (rhoCalculations.length === 0) {
-        return { finalCalculatedRho: null, calculationErrorRho: "Calculation resulted in division by zero. Ensure l1 values differ for paired readings.", deviationRho: null };
-    }
-
-    const averageRho = rhoCalculations.reduce((sum, rho) => sum + rho, 0) / rhoCalculations.length;
-    const deviation = reportData.trueRho !== 0 ? ((averageRho - reportData.trueRho) / reportData.trueRho) * 100 : 0;
-    
-    return { finalCalculatedRho: averageRho, calculationErrorRho: null, deviationRho: deviation };
-}, [reportData]);
 
   if (!reportData) {
     return <div className="flex items-center justify-center min-h-screen">Loading report...</div>;
@@ -212,20 +161,10 @@ const ReportPage = () => {
           </CardHeader>
           <CardContent className="space-y-8">
             <div>
-              <h2 className="text-xl font-bold mb-2">Experiment 1: Find Unknown Resistance (X)</h2>
+              <h2 className="text-xl font-bold mb-2">Experiment: Find Unknown Resistance (X)</h2>
               {renderReadingsTable(reportData.readings.findX, "Readings for determining unknown resistance X.")}
               <div className="mt-4">
                 {renderResults("Result for X", finalCalculatedX, reportData.trueX, calculationErrorX, deviationX, "Ω")}
-              </div>
-            </div>
-
-            <Separator />
-
-            <div>
-              <h2 className="text-xl font-bold mb-2">Experiment 2: Find Resistance per Unit Length (ρ)</h2>
-              {renderReadingsTable(reportData.readings.findRho, "Readings for determining resistance per unit length ρ.")}
-               <div className="mt-4">
-                {renderResults("Result for ρ", finalCalculatedRho, reportData.trueRho, calculationErrorRho, deviationRho, "Ω/cm")}
               </div>
             </div>
           </CardContent>
@@ -253,3 +192,5 @@ const ReportPage = () => {
 };
 
 export default ReportPage;
+
+    

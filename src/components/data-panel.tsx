@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import type { Reading, ExperimentMode } from '@/app/page';
+import type { Reading } from '@/app/page';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,7 +25,6 @@ interface DataPanelProps {
   onGetSuggestion: () => Promise<void>;
   selectedReading: Reading | undefined;
   trueXValue: number;
-  experimentMode: ExperimentMode;
   wireResistancePerCm: number;
   isTrueValueRevealed: boolean;
   onRevealToggle: () => void;
@@ -39,9 +38,8 @@ const suggestionFormSchema = z.object({
 
 
 const DataPanel: React.FC<DataPanelProps> = ({
-  readings, selectedReadingId, onSelectReading, aiSuggestion, isAiLoading, onGetSuggestion, selectedReading, trueXValue, experimentMode, wireResistancePerCm, isTrueValueRevealed, onRevealToggle
+  readings, selectedReadingId, onSelectReading, aiSuggestion, isAiLoading, onGetSuggestion, selectedReading, trueXValue, wireResistancePerCm, isTrueValueRevealed, onRevealToggle
 }) => {
-    const isFindXMode = experimentMode === 'findX';
 
   const form = useForm<z.infer<typeof suggestionFormSchema>>({
     resolver: zodResolver(suggestionFormSchema),
@@ -53,19 +51,16 @@ const DataPanel: React.FC<DataPanelProps> = ({
       form.reset({
         R: selectedReading.rValue,
         l1: selectedReading.l1,
-        // The concept of X for the AI form changes based on mode
-        X: isFindXMode ? selectedReading.rValue : 0, 
+        X: selectedReading.rValue, 
       });
     }
-  }, [selectedReading, form, isFindXMode]);
+  }, [selectedReading, form]);
 
   const onSubmit = () => {
     onGetSuggestion();
   };
   
   const { finalCalculatedX, calculationErrorX, deviationX } = useMemo(() => {
-    if (experimentMode !== 'findX') return { finalCalculatedX: null, calculationErrorX: null, deviationX: null };
-    
     const findXReadings = readings.filter(r => r.isSwapped !== undefined);
     const normalReading = findXReadings.find(r => !r.isSwapped);
     const swappedReading = findXReadings.find(r => r.isSwapped);
@@ -84,36 +79,9 @@ const DataPanel: React.FC<DataPanelProps> = ({
       return { finalCalculatedX: calculatedX, calculationErrorX: null, deviationX: deviation };
     }
     return { finalCalculatedX: null, calculationErrorX: "Requires one normal and one swapped reading.", deviationX: null };
-  }, [readings, experimentMode, wireResistancePerCm, trueXValue]);
-
-  const { finalCalculatedRho, calculationErrorRho, deviationRho } = useMemo(() => {
-    if (experimentMode !== 'findRho') return { finalCalculatedRho: null, calculationErrorRho: null, deviationRho: null };
-    
-    const findRhoReadings = readings.filter(r => r.isSwapped !== undefined);
-    const normalReading = findRhoReadings.find(r => !r.isSwapped); // R in left, Copper in right
-    const swappedReading = findRhoReadings.find(r => r.isSwapped); // Copper in left, R in right
-
-    if (normalReading && swappedReading) {
-      if (normalReading.rValue !== swappedReading.rValue) {
-        return { finalCalculatedRho: null, calculationErrorRho: "R values must be the same for both readings.", deviationRho: null };
-      }
-      const R = normalReading.rValue;
-      const l_normal = normalReading.l1;
-      const l_swapped = swappedReading.l1;
-
-      if (l_swapped - l_normal === 0) {
-        return { finalCalculatedRho: null, calculationErrorRho: "Balance points cannot be the same.", deviationRho: null };
-      }
-      
-      const calculatedRho = R / (l_swapped - l_normal);
-      const deviation = wireResistancePerCm !== 0 ? ((calculatedRho - wireResistancePerCm) / wireResistancePerCm) * 100 : 0;
-      return { finalCalculatedRho: calculatedRho, calculationErrorRho: null, deviationRho: deviation };
-    }
-    return { finalCalculatedRho: null, calculationErrorRho: "Requires one normal and one swapped reading.", deviationRho: null };
-  }, [readings, experimentMode, wireResistancePerCm]);
+  }, [readings, wireResistancePerCm, trueXValue]);
 
   const renderCalculationResults = () => {
-    if (isFindXMode) {
       const isCalculated = finalCalculatedX !== null;
       return (
         <>
@@ -142,50 +110,20 @@ const DataPanel: React.FC<DataPanelProps> = ({
           </div>
         </>
       );
-    } else { // findRho Mode
-        const isCalculated = finalCalculatedRho !== null;
-        return (
-           <>
-                <div className="font-semibold flex justify-between">
-                    <span>Calculated ρ (rho):</span>
-                    {isCalculated ? (
-                        <span>{finalCalculatedRho.toFixed(4)} Ω/cm</span>
-                    ) : (
-                        <span className="text-xs text-muted-foreground">{calculationErrorRho}</span>
-                    )}
-                </div>
-                <div className="font-semibold flex justify-between items-center">
-                    <span>True Value of ρ:</span>
-                     {isTrueValueRevealed ? (
-                        <div className='flex items-center gap-2'>
-                          {isCalculated && deviationRho !== null && (
-                            <Badge variant={Math.abs(deviationRho) < 5 ? "secondary" : "destructive"}>
-                              {deviationRho.toFixed(1)}% dev.
-                            </Badge>
-                          )}
-                          <span>{wireResistancePerCm.toFixed(4)} Ω/cm</span>
-                        </div>
-                      ) : (
-                        <span>? Ω/cm</span>
-                      )}
-                </div>
-           </>
-        );
-    }
   }
 
 
   return (
     <Card className="w-full flex flex-col">
       <CardHeader>
-        <CardTitle className="font-headline">{isFindXMode ? 'Analysis (Find X)' : 'Analysis (Find ρ)'}</CardTitle>
+        <CardTitle className="font-headline">Analysis</CardTitle>
         <CardDescription>Review your data and perform calculations.</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col">
         <Tabs defaultValue="data" className="flex-grow flex flex-col">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="data">Data Table</TabsTrigger>
-            <TabsTrigger value="ai" disabled={!isFindXMode}>AI Help</TabsTrigger>
+            <TabsTrigger value="ai">AI Help</TabsTrigger>
           </TabsList>
           <TabsContent value="data" className="mt-4 flex-grow">
             <Card className="h-full flex flex-col">
@@ -297,3 +235,5 @@ const DataPanel: React.FC<DataPanelProps> = ({
 };
 
 export default DataPanel;
+
+    
