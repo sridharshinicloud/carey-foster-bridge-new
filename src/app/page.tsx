@@ -191,10 +191,6 @@ export default function Home() {
     const newValue = parseFloat(newTrueXInput);
     if (!isNaN(newValue) && newValue > 0) {
       setTrueX(newValue);
-      toast({
-        title: 'Success!',
-        description: `The unknown resistance (X) has been set to ${newValue.toFixed(2)} Ω.`,
-      });
       setIsValueLocked(true);
       setIsInstructionDialogOpen(false);
     } else {
