@@ -134,7 +134,7 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
         <CardDescription>Adjust the resistance and slide the jockey to find the balance point.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+        <div className="grid grid-cols-1 gap-6 items-end">
             <div className="space-y-3">
               <TooltipProvider>
                 <Tooltip>
@@ -169,35 +169,6 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                   step={0.1}
                 />
                 <span className="text-sm font-medium">Ω</span>
-              </div>
-            </div>
-             <div className="space-y-3">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-2">
-                      <label className="font-medium text-sm">Jockey Position (cm)</label>
-                      <AlertCircle className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Slide the jockey along the wire. Use arrow keys for fine control.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <div className="flex items-center gap-2">
-                <Slider
-                  value={[jockeyPos]}
-                  onValueChange={(vals) => onJockeyMove(vals[0])}
-                  min={0.0}
-                  max={100.0}
-                  step={0.01}
-                  className="flex-1"
-                />
-                 <div className="w-24 text-center font-mono text-sm border rounded-md h-10 flex items-center justify-center bg-muted/50">
-                    {jockeyPos.toFixed(2)}
-                 </div>
               </div>
             </div>
         </div>
