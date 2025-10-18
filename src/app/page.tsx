@@ -84,7 +84,7 @@ export default function Home() {
   const handleRecord = useCallback(() => {
     const currentPos = parseFloat(jockeyPos.toFixed(2));
     
-    setReadings(prev => produce(prev, draft => {
+    setReadings(produce(draft => {
         const currentReadings = draft[experimentMode];
         let existingReadingForR = currentReadings.find(r => r.rValue === knownR);
 
@@ -129,7 +129,7 @@ export default function Home() {
             }
         }
     }));
-  }, [jockeyPos, knownR, isSwapped, experimentMode, toast]);
+  }, [jockeyPos, knownR, isSwapped, experimentMode, toast, readings]);
 
   const handleSwap = () => {
     setIsSwapped(prev => !prev);
@@ -375,3 +375,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
