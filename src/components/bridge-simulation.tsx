@@ -83,7 +83,7 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
   
-  const needleRotation = Math.max(-45, Math.min(45, potentialDifference));
+  const needleRotation = Math.max(-50, Math.min(50, potentialDifference));
 
   let rBoxLabel = "?";
   let xBoxLabel = "?";
@@ -209,20 +209,20 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
               <div className="relative w-32 h-20 mt-1">
                 <svg viewBox="0 0 100 60" className="w-full h-full">
                   {/* Scale */}
-                  <path d="M 10 50 A 40 40 0 0 1 90 50" stroke="hsl(var(--muted-foreground))" strokeWidth="1" fill="none" />
+                  <path d="M 5 50 A 45 45 0 0 1 95 50" stroke="hsl(var(--muted-foreground))" strokeWidth="1" fill="none" />
                   {/* Markings */}
-                  {[-45, -22.5, 0, 22.5, 45].map(angle => {
-                    const x1 = 50 + 40 * Math.sin(angle * Math.PI / 180);
-                    const y1 = 50 - 40 * Math.cos(angle * Math.PI / 180);
-                    const x2 = 50 + 35 * Math.sin(angle * Math.PI / 180);
-                    const y2 = 50 - 35 * Math.cos(angle * Math.PI / 180);
+                  {[-50, -25, 0, 25, 50].map(angle => {
+                    const x1 = 50 + 45 * Math.sin(angle * Math.PI / 180);
+                    const y1 = 50 - 45 * Math.cos(angle * Math.PI / 180);
+                    const x2 = 50 + 40 * Math.sin(angle * Math.PI / 180);
+                    const y2 = 50 - 40 * Math.cos(angle * Math.PI / 180);
                     return <line key={angle} x1={x1} y1={y1} x2={x2} y2={y2} stroke="hsl(var(--muted-foreground))" strokeWidth="1" />;
                   })}
-                  <line x1="50" y1="10" x2="50" y2="15" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" />
+                  <line x1="50" y1="5" x2="50" y2="10" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" />
 
                   {/* Needle */}
                   <g style={{ transform: `rotate(${needleRotation}deg)`, transformOrigin: '50px 50px', transition: 'transform 300ms ease-out' }}>
-                    <polygon points="50,50 49,15 51,15" fill="hsl(var(--destructive))" />
+                    <polygon points="50,50 49,10 51,10" fill="hsl(var(--destructive))" />
                   </g>
 
                   {/* Pivot */}
