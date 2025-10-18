@@ -82,6 +82,24 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        onJockeyMove(Math.max(0, jockeyPos - 0.01));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        onJockeyMove(Math.min(100, jockeyPos + 0.01));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [jockeyPos, onJockeyMove]);
   
   const needleRotation = Math.max(-50, Math.min(50, potentialDifference));
   const isBalanced = Math.abs(jockeyPos - balancePoint) < 0.1;
