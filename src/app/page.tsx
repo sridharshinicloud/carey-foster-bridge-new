@@ -241,13 +241,13 @@ export default function Home() {
         <div className="container mx-auto px-4 flex items-center justify-between">
            <div className="flex items-center gap-3">
               <Image
-                src="https://picsum.photos/seed/logo/40/40"
-                alt="BridgeSim Logo"
-                width={40}
-                height={40}
+                src="https://www.snuchennai.edu.in/wp-content/uploads/2021/06/SNU_Chennai_logo_300-X-78-PX.png"
+                alt="SNU Logo"
+                width={150}
+                height={39}
                 className="rounded-lg"
               />
-              <h1 className="text-2xl font-bold font-headline">BridgeSim</h1>
+              <h1 className="text-2xl font-bold font-headline">Carey - Foster Bridge</h1>
            </div>
            
            <div className="flex items-center gap-2">

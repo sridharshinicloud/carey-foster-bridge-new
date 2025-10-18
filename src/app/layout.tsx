@@ -4,7 +4,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'BridgeSim',
+  title: 'Carey - Foster Bridge',
   description: 'A virtual physics lab simulating a Carey Foster bridge experiment.',
 };
 
