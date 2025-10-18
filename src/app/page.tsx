@@ -57,6 +57,7 @@ export default function Home() {
   const P = 10; 
   const Q = 10; 
   const WIRE_RESISTANCE_PER_CM = 0.02; // rho
+  const SENSITIVITY_FACTOR = 0.005;
 
   const balancePoint = useMemo(() => {
     let rLeft, rRight;
@@ -76,8 +77,7 @@ export default function Home() {
   }, [isSwapped, knownR, experimentMode, WIRE_RESISTANCE_PER_CM, trueX]);
 
   const potentialDifference = useMemo(() => {
-    const sensitivityFactor = 0.005; // This determines how much the needle moves.
-    return (jockeyPos - balancePoint) * sensitivityFactor;
+    return (jockeyPos - balancePoint) * SENSITIVITY_FACTOR;
   }, [jockeyPos, balancePoint]);
 
 
@@ -129,7 +129,7 @@ export default function Home() {
             }
         }
     }));
-  }, [jockeyPos, knownR, isSwapped, experimentMode, toast, readings]);
+  }, [jockeyPos, knownR, isSwapped, experimentMode, toast]);
 
   const handleSwap = () => {
     setIsSwapped(prev => !prev);
@@ -241,7 +241,7 @@ export default function Home() {
                 Generate Report
             </Button>
 
-            <AlertDialog open={isInstructionDialogOpen} onOpenChange={setIsInstructionDialogOpen}>
+            <AlertDialog open={isInstructionDialogOpen && !isValueLocked} onOpenChange={setIsInstructionDialogOpen}>
               <AlertDialogTrigger asChild>
                   <Button variant="outline" size="sm" disabled={isValueLocked}>
                     <Info className="mr-2 h-4 w-4"/>
@@ -375,5 +375,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
