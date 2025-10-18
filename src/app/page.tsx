@@ -150,6 +150,20 @@ export default function Home() {
     setExperimentMode('findX');
   }, []);
 
+  const handleDeleteReading = useCallback((id: number) => {
+    setReadings(produce(draft => {
+        const currentReadings = draft[experimentMode];
+        const index = currentReadings.findIndex(r => r.id === id);
+        if (index !== -1) {
+            currentReadings.splice(index, 1);
+        }
+        if (selectedReadingId === id) {
+            setSelectedReadingId(null);
+            setAiSuggestion('');
+        }
+    }));
+  }, [experimentMode, selectedReadingId]);
+
   const currentReadings = readings[experimentMode];
   const selectedReading = useMemo(() => currentReadings.find(r => r.id === selectedReadingId), [currentReadings, selectedReadingId]);
 
@@ -311,6 +325,7 @@ export default function Home() {
                       aiSuggestion={aiSuggestion}
                       isAiLoading={isAiLoading}
                       onGetSuggestion={handleGetSuggestion}
+                      onDeleteReading={handleDeleteReading}
                       selectedReading={selectedReading}
                       trueXValue={trueX}
                       wireResistancePerCm={WIRE_RESISTANCE_PER_CM}
@@ -351,6 +366,7 @@ export default function Home() {
                       aiSuggestion={aiSuggestion}
                       isAiLoading={isAiLoading}
                       onGetSuggestion={handleGetSuggestion}
+                      onDeleteReading={handleDeleteReading}
                       selectedReading={selectedReading}
                       trueXValue={trueX}
                       wireResistancePerCm={WIRE_RESISTANCE_PER_CM}

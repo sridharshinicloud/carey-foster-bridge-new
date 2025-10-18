@@ -5,7 +5,7 @@ import type { Reading, ExperimentMode } from '@/app/page';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Bot, Loader2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Sparkles, Bot, Loader2, Eye, EyeOff, AlertTriangle, Trash2 } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
@@ -24,6 +24,7 @@ interface DataPanelProps {
   aiSuggestion: string;
   isAiLoading: boolean;
   onGetSuggestion: () => Promise<void>;
+  onDeleteReading: (id: number) => void;
   selectedReading: Reading | undefined;
   trueXValue: number;
   wireResistancePerCm: number;
@@ -42,7 +43,7 @@ const suggestionFormSchema = z.object({
 
 
 const DataPanel: React.FC<DataPanelProps> = ({
-  readings, selectedReadingId, onSelectReading, aiSuggestion, isAiLoading, onGetSuggestion, selectedReading, trueXValue, wireResistancePerCm, isTrueValueRevealed, onRevealToggle, experimentMode, isSwapped, knownR
+  readings, selectedReadingId, onSelectReading, aiSuggestion, isAiLoading, onGetSuggestion, onDeleteReading, selectedReading, trueXValue, wireResistancePerCm, isTrueValueRevealed, onRevealToggle, experimentMode, isSwapped, knownR
 }) => {
 
   const form = useForm<z.infer<typeof suggestionFormSchema>>({
@@ -206,6 +207,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
                       <TableHead>R (Ω)</TableHead>
                       <TableHead>l₁ (cm)</TableHead>
                       <TableHead>l₂ (cm)</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -218,10 +220,23 @@ const DataPanel: React.FC<DataPanelProps> = ({
                         <TableCell>{reading.rValue.toFixed(2)}</TableCell>
                         <TableCell>{reading.l1 !== null ? reading.l1.toFixed(2) : '...'}</TableCell>
                         <TableCell>{reading.l2 !== null ? reading.l2.toFixed(2) : '...'}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteReading(reading.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     )) : (
                       <TableRow>
-                        <TableCell colSpan={3} className="text-center h-48">No data recorded yet.</TableCell>
+                        <TableCell colSpan={4} className="text-center h-48">No data recorded yet.</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -295,5 +310,3 @@ const DataPanel: React.FC<DataPanelProps> = ({
 };
 
 export default DataPanel;
-
-    
