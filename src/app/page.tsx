@@ -74,7 +74,7 @@ export default function Home() {
     const resistanceDifference = rRight - rLeft;
     const balanceShift = resistanceDifference / (2 * WIRE_RESISTANCE_PER_CM);
     return 50 + balanceShift;
-  }, [isSwapped, knownR, trueX, WIRE_RESISTANCE_PER_CM, experimentMode, jockeyPos]);
+  }, [isSwapped, knownR, trueX, WIRE_RESISTANCE_PER_CM, experimentMode]);
 
   const potentialDifference = useMemo(() => {
     let rLeft, rRight;
@@ -357,5 +357,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
