@@ -145,7 +145,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
         const isCalculated = finalCalculatedRho !== null;
         return (
              <div className="font-semibold flex justify-between">
-                <span>Calculated ρ:</span>
+                <span>Calculated Avg. ρ:</span>
                 {isCalculated ? (
                     <span className='font-mono'>{finalCalculatedRho.toFixed(4)} Ω/cm</span>
                 ) : (
@@ -200,43 +200,65 @@ const DataPanel: React.FC<DataPanelProps> = ({
               <ScrollArea className="flex-grow">
                 <Table>
                   <TableCaption>
-                    Select a row to use it for AI suggestions.
+                    {experimentMode === 'findX' ? 'Select a row to use it for AI suggestions.' : 'Completed readings for ρ calculation.'}
                   </TableCaption>
                   <TableHeader className="sticky top-0 bg-card z-10">
                     <TableRow>
                       <TableHead>R (Ω)</TableHead>
                       <TableHead>l₁ (cm)</TableHead>
                       <TableHead>l₂ (cm)</TableHead>
+                      {experimentMode === 'findRho' && (
+                        <>
+                          <TableHead>l₂-l₁ (cm)</TableHead>
+                          <TableHead>ρ (Ω/cm)</TableHead>
+                        </>
+                      )}
                       <TableHead className="text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {readings.length > 0 ? readings.map((reading) => (
-                      <TableRow
-                        key={reading.id}
-                        className={cn("cursor-pointer", selectedReadingId === reading.id && 'bg-primary/10')}
-                        onClick={() => onSelectReading(reading.id)}
-                      >
-                        <TableCell>{reading.rValue.toFixed(2)}</TableCell>
-                        <TableCell>{reading.l1 !== null ? reading.l1.toFixed(2) : '...'}</TableCell>
-                        <TableCell>{reading.l2 !== null ? reading.l2.toFixed(2) : '...'}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDeleteReading(reading.id);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )) : (
+                    {readings.length > 0 ? readings.map((reading) => {
+                      const isComplete = reading.l1 !== null && reading.l2 !== null;
+                      let diff = null;
+                      let rho = null;
+                      if (experimentMode === 'findRho' && isComplete) {
+                          diff = reading.l2! - reading.l1!;
+                          rho = diff !== 0 ? reading.rValue / diff : null;
+                      }
+
+                      return (
+                        <TableRow
+                          key={reading.id}
+                          className={cn("cursor-pointer", selectedReadingId === reading.id && 'bg-primary/10')}
+                          onClick={() => onSelectReading(reading.id)}
+                        >
+                          <TableCell>{reading.rValue.toFixed(2)}</TableCell>
+                          <TableCell>{reading.l1 !== null ? reading.l1.toFixed(2) : '...'}</TableCell>
+                          <TableCell>{reading.l2 !== null ? reading.l2.toFixed(2) : '...'}</TableCell>
+                           {experimentMode === 'findRho' && (
+                            <>
+                              <TableCell>{isComplete && diff !== null ? diff.toFixed(2) : '...'}</TableCell>
+                              <TableCell>{isComplete && rho !== null ? rho.toFixed(4) : '...'}</TableCell>
+                            </>
+                          )}
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteReading(reading.id);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }) : (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center h-48">No data recorded yet.</TableCell>
+                        <TableCell colSpan={experimentMode === 'findRho' ? 6 : 4} className="text-center h-48">No data recorded yet.</TableCell>
                       </TableRow>
                     )}
                   </TableBody>

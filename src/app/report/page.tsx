@@ -100,7 +100,7 @@ const ReportPage = () => {
     return <div className="flex items-center justify-center min-h-screen">Loading report...</div>;
   }
   
-  const renderReadingsTable = (readings: Reading[], caption: string) => {
+  const renderReadingsTable = (readings: Reading[], caption: string, mode: 'findX' | 'findRho') => {
     if (readings.length === 0) return <p className="text-muted-foreground text-center py-4">No data for this experiment.</p>;
     return (
       <Table>
@@ -111,17 +111,34 @@ const ReportPage = () => {
             <TableHead>R (Ω)</TableHead>
             <TableHead>l₁ (cm)</TableHead>
             <TableHead>l₂ (cm)</TableHead>
+            {mode === 'findRho' && <TableHead>l₂-l₁ (cm)</TableHead>}
+            {mode === 'findRho' && <TableHead>ρ (Ω/cm)</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {readings.map((reading, index) => (
-            <TableRow key={reading.id}>
-              <TableCell>{index + 1}</TableCell>
-              <TableCell>{reading.rValue.toFixed(2)}</TableCell>
-              <TableCell>{reading.l1 !== null ? reading.l1.toFixed(2) : 'N/A'}</TableCell>
-              <TableCell>{reading.l2 !== null ? reading.l2.toFixed(2) : 'N/A'}</TableCell>
-            </TableRow>
-          ))}
+          {readings.map((reading, index) => {
+            const isComplete = reading.l1 !== null && reading.l2 !== null;
+            let diff = null;
+            let rho = null;
+            if (mode === 'findRho' && isComplete) {
+              diff = reading.l2! - reading.l1!;
+              rho = diff !== 0 ? reading.rValue / diff : null;
+            }
+            return (
+              <TableRow key={reading.id}>
+                <TableCell>{index + 1}</TableCell>
+                <TableCell>{reading.rValue.toFixed(2)}</TableCell>
+                <TableCell>{reading.l1 !== null ? reading.l1.toFixed(2) : 'N/A'}</TableCell>
+                <TableCell>{reading.l2 !== null ? reading.l2.toFixed(2) : 'N/A'}</TableCell>
+                {mode === 'findRho' && (
+                  <>
+                    <TableCell>{isComplete ? diff!.toFixed(2) : 'N/A'}</TableCell>
+                    <TableCell>{isComplete && rho !== null ? rho.toFixed(4) : 'N/A'}</TableCell>
+                  </>
+                )}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     );
@@ -183,7 +200,7 @@ const ReportPage = () => {
           <CardContent className="space-y-8">
             <div>
               <h2 className="text-xl font-bold mb-2">Experiment: Find Unknown Resistance (X)</h2>
-              {renderReadingsTable(reportData.readings.findX, "Readings for determining unknown resistance X.")}
+              {renderReadingsTable(reportData.readings.findX, "Readings for determining unknown resistance X.", 'findX')}
               <div className="mt-4">
                 {renderResults("Result for X", finalCalculatedX, reportData.trueX, calculationErrorX, deviationX, "Ω")}
               </div>
@@ -191,7 +208,7 @@ const ReportPage = () => {
 
             <div className="pt-8">
               <h2 className="text-xl font-bold mb-2">Experiment: Find Resistance/Length (ρ)</h2>
-              {renderReadingsTable(reportData.readings.findRho, "Readings for determining resistance per unit length ρ.")}
+              {renderReadingsTable(reportData.readings.findRho, "Readings for determining resistance per unit length ρ.", 'findRho')}
               <div className="mt-4">
                 {renderResults("Result for ρ", finalCalculatedRho, reportData.trueRho, calculationErrorRho, deviationRho, "Ω/cm")}
               </div>
@@ -222,5 +239,3 @@ const ReportPage = () => {
 };
 
 export default ReportPage;
-
-    
