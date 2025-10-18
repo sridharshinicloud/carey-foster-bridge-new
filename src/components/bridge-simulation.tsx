@@ -171,6 +171,41 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                 <span className="text-sm font-medium">Ω</span>
               </div>
             </div>
+             <div className="space-y-3">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2">
+                      <label className="font-medium text-sm">Jockey Position (cm)</label>
+                      <AlertCircle className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Slide the jockey along the wire. Use arrow keys for fine control.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[jockeyPos]}
+                  onValueChange={(vals) => onJockeyMove(vals[0])}
+                  min={0.0}
+                  max={100.0}
+                  step={0.01}
+                  className="flex-1"
+                />
+                <Input
+                  type="number"
+                  value={jockeyPos.toFixed(2)}
+                  onChange={(e) => onJockeyMove(parseFloat(e.target.value) || 0)}
+                  className="w-24 text-center"
+                  min={0.0}
+                  max={100.0}
+                  step={0.01}
+                />
+              </div>
+            </div>
         </div>
         <div className="flex justify-end">
              <Button onClick={onSwap} variant="outline">
