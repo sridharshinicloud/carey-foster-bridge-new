@@ -84,12 +84,12 @@ const DataPanel: React.FC<DataPanelProps> = ({
     return { finalCalculatedX: averageX, calculationErrorX: null, deviationX: deviation };
   }, [readings, wireResistancePerCm, trueXValue, experimentMode]);
 
-  const { finalCalculatedRho, calculationErrorRho } = useMemo(() => {
-    if (experimentMode !== 'findRho') return { finalCalculatedRho: null, calculationErrorRho: null };
+  const { finalCalculatedRho, calculationErrorRho, deviationRho } = useMemo(() => {
+    if (experimentMode !== 'findRho') return { finalCalculatedRho: null, calculationErrorRho: null, deviationRho: null };
     
     const completeReadings = readings.filter(r => r.l1 !== null && r.l2 !== null);
     if (completeReadings.length === 0) {
-        return { finalCalculatedRho: null, calculationErrorRho: "Requires a complete reading (l1 & l2)." };
+        return { finalCalculatedRho: null, calculationErrorRho: "Requires a complete reading (l1 & l2).", deviationRho: null };
     }
     
     const rhos = completeReadings.map(r => {
@@ -98,12 +98,14 @@ const DataPanel: React.FC<DataPanelProps> = ({
     }).filter((rho): rho is number => rho !== null);
 
     if (rhos.length === 0) {
-        return { finalCalculatedRho: null, calculationErrorRho: "l1 and l2 cannot be the same." };
+        return { finalCalculatedRho: null, calculationErrorRho: "l1 and l2 cannot be the same.", deviationRho: null };
     }
 
     const avgRho = rhos.reduce((a, b) => a + b, 0) / rhos.length;
-    return { finalCalculatedRho: avgRho, calculationErrorRho: null };
-  }, [readings, experimentMode]);
+    const deviation = wireResistancePerCm !== 0 ? ((avgRho - wireResistancePerCm) / wireResistancePerCm) * 100 : 0;
+
+    return { finalCalculatedRho: avgRho, calculationErrorRho: null, deviationRho: deviation };
+  }, [readings, experimentMode, wireResistancePerCm]);
 
 
   const renderCalculationResults = () => {
@@ -112,7 +114,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
         return (
           <>
             <div className="font-semibold flex justify-between">
-                <span>Final Calculated X:</span>
+                <span>Mean Calculated X:</span>
                 {isCalculated ? (
                     <span className="font-mono">{finalCalculatedX.toFixed(4)} Ω</span>
                 ) : (
@@ -144,14 +146,27 @@ const DataPanel: React.FC<DataPanelProps> = ({
       if (experimentMode === 'findRho') {
         const isCalculated = finalCalculatedRho !== null;
         return (
-             <div className="font-semibold flex justify-between">
-                <span>Calculated Avg. ρ:</span>
-                {isCalculated ? (
-                    <span className='font-mono'>{finalCalculatedRho.toFixed(4)} Ω/cm</span>
-                ) : (
-                    <span className="text-xs text-muted-foreground">{calculationErrorRho}</span>
-                )}
-            </div>
+             <>
+                <div className="font-semibold flex justify-between">
+                    <span>Mean Calculated ρ:</span>
+                    {isCalculated ? (
+                        <span className='font-mono'>{finalCalculatedRho.toFixed(4)} Ω/cm</span>
+                    ) : (
+                        <span className="text-xs text-muted-foreground">{calculationErrorRho}</span>
+                    )}
+                </div>
+                <div className="font-semibold flex justify-between">
+                    <span>True Value of ρ:</span>
+                     <div className='flex items-center gap-2'>
+                        {isCalculated && deviationRho !== null && (
+                          <Badge variant={Math.abs(deviationRho) < 5 ? "secondary" : "destructive"}>
+                            {deviationRho.toFixed(1)}% dev.
+                          </Badge>
+                        )}
+                        <span className='font-mono'>{wireResistancePerCm.toFixed(4)} Ω/cm</span>
+                    </div>
+                </div>
+             </>
         )
       }
       return null;

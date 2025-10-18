@@ -159,7 +159,7 @@ const ReportPage = () => {
         <h3 className="font-semibold">{title}</h3>
         <div className="p-4 border rounded-lg bg-muted/30 space-y-2">
            <div className="flex justify-between">
-              <span>Calculated Value:</span>
+              <span>Mean Calculated Value:</span>
               {calculatedValue !== null ? (
                 <span className="font-mono">{calculatedValue.toFixed(4)} {unit}</span>
               ) : (
