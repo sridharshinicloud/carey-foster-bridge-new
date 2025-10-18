@@ -24,6 +24,7 @@ import { Zap, Info, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Image from 'next/image';
 
 export type Reading = {
   id: number;
@@ -239,9 +240,13 @@ export default function Home() {
       <header className="py-4 border-b">
         <div className="container mx-auto px-4 flex items-center justify-between">
            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary text-primary-foreground flex items-center justify-center rounded-lg">
-                <Zap className="w-6 h-6" />
-              </div>
+              <Image
+                src="https://picsum.photos/seed/logo/40/40"
+                alt="BridgeSim Logo"
+                width={40}
+                height={40}
+                className="rounded-lg"
+              />
               <h1 className="text-2xl font-bold font-headline">BridgeSim</h1>
            </div>
            
