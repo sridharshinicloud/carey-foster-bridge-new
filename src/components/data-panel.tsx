@@ -157,15 +157,23 @@ const DataPanel: React.FC<DataPanelProps> = ({
                 </div>
                 <div className="font-semibold flex justify-between">
                     <span>True Value of ρ:</span>
-                     <div className='flex items-center gap-2'>
-                        {isCalculated && deviationRho !== null && (
-                          <Badge variant={Math.abs(deviationRho) < 5 ? "secondary" : "destructive"}>
-                            {deviationRho.toFixed(1)}% dev.
-                          </Badge>
-                        )}
-                        <span className='font-mono'>{wireResistancePerCm.toFixed(4)} Ω/cm</span>
-                    </div>
+                    {isTrueValueRevealed ? (
+                      <div className='flex items-center gap-2'>
+                          {isCalculated && deviationRho !== null && (
+                            <Badge variant={Math.abs(deviationRho) < 5 ? "secondary" : "destructive"}>
+                              {deviationRho.toFixed(1)}% dev.
+                            </Badge>
+                          )}
+                          <span className='font-mono'>{wireResistancePerCm.toFixed(4)} Ω/cm</span>
+                      </div>
+                    ) : (
+                      <span className='font-mono'>? Ω/cm</span>
+                    )}
                 </div>
+                <Button onClick={onRevealToggle} variant="outline" size="sm" className="w-full mt-2">
+                    {isTrueValueRevealed ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                    {isTrueValueRevealed ? 'Hide True Value' : 'Reveal True Value'}
+                </Button>
              </>
         )
       }
