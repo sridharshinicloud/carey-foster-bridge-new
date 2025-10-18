@@ -131,7 +131,7 @@ export default function Home() {
   }, [selectedReading, WIRE_RESISTANCE_PER_CM, experimentMode]);
 
   const handleGetSuggestion = useCallback(async () => {
-    if (!selectedReading) return;
+    if (!selectedReading || experimentMode === 'findRho') return;
 
     setIsAiLoading(true);
     setAiSuggestion('');
@@ -154,7 +154,7 @@ export default function Home() {
       });
     }
     setIsAiLoading(false);
-  }, [selectedReading, calculatedXForAI, toast]);
+  }, [selectedReading, calculatedXForAI, toast, experimentMode]);
 
   const handleTrueXChange = () => {
     const newValue = parseFloat(newTrueXInput);
