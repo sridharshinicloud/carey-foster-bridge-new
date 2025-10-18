@@ -44,7 +44,7 @@ interface BridgeSimulationProps {
   potentialDifference: number;
   onRecord: () => void;
   onReset: () => void;
-  isBalanced: boolean;
+  balancePoint: number;
   isSwapped: boolean;
   onSwap: () => void;
   P: number;
@@ -54,7 +54,7 @@ interface BridgeSimulationProps {
 }
 
 const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
-  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, isBalanced, isSwapped, onSwap, P, Q, experimentMode, trueX
+  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, balancePoint, isSwapped, onSwap, P, Q, experimentMode, trueX
 }) => {
   const wireRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -84,6 +84,7 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
   }, [isDragging, handleMouseMove, handleMouseUp]);
   
   const needleRotation = Math.max(-50, Math.min(50, potentialDifference));
+  const isBalanced = Math.abs(jockeyPos - balancePoint) < 0.1;
 
   let rBoxLabel = "?";
   let xBoxLabel = "?";
@@ -249,3 +250,5 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
 };
 
 export default BridgeSimulation;
+
+    

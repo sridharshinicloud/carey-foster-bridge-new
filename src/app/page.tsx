@@ -67,8 +67,8 @@ export default function Home() {
       rRight = isSwapped ? knownR : trueX;
     } else { // findRho
       const copperStripResistance = 0.0;
-      rLeft = isSwapped ? knownR : copperStripResistance;
-      rRight = isSwapped ? copperStripResistance : knownR;
+      rLeft = !isSwapped ? knownR : copperStripResistance;
+      rRight = !isSwapped ? copperStripResistance : knownR;
     }
 
     const resistanceDifference = rRight - rLeft;
@@ -265,7 +265,7 @@ export default function Home() {
                       potentialDifference={potentialDifference}
                       onRecord={handleRecord}
                       onReset={handleReset}
-                      isBalanced={Math.abs(potentialDifference) < 0.01}
+                      balancePoint={balancePoint}
                       isSwapped={isSwapped}
                       onSwap={handleSwap}
                       P={P}
@@ -303,7 +303,7 @@ export default function Home() {
                       potentialDifference={potentialDifference}
                       onRecord={handleRecord}
                       onReset={handleReset}
-                      isBalanced={Math.abs(potentialDifference) < 0.01}
+                      balancePoint={balancePoint}
                       isSwapped={isSwapped}
                       onSwap={handleSwap}
                       P={P}
@@ -339,3 +339,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
