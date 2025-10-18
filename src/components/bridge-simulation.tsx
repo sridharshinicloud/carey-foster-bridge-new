@@ -195,15 +195,9 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                   step={0.01}
                   className="flex-1"
                 />
-                <Input
-                  type="number"
-                  value={jockeyPos.toFixed(2)}
-                  onChange={(e) => onJockeyMove(parseFloat(e.target.value) || 0)}
-                  className="w-24 text-center"
-                  min={0.0}
-                  max={100.0}
-                  step={0.01}
-                />
+                 <div className="w-24 text-center font-mono text-sm border rounded-md h-10 flex items-center justify-center bg-muted/50">
+                    {jockeyPos.toFixed(2)}
+                 </div>
               </div>
             </div>
         </div>
