@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
@@ -41,7 +41,6 @@ interface BridgeSimulationProps {
   onKnownRChange: (value: number) => void;
   jockeyPos: number;
   onJockeyMove: (pos: number) => void;
-  potentialDifference: number;
   onRecord: () => void;
   onReset: () => void;
   balancePoint: number;
@@ -51,14 +50,17 @@ interface BridgeSimulationProps {
   Q: number;
   experimentMode: ExperimentMode;
   trueX: number;
+  potentialDifference: number;
 }
 
 const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
-  knownR, onKnownRChange, jockeyPos, onJockeyMove, potentialDifference, onRecord, onReset, balancePoint, isSwapped, onSwap, P, Q, experimentMode, trueX
+  knownR, onKnownRChange, jockeyPos, onJockeyMove, onRecord, onReset, balancePoint, isSwapped, onSwap, P, Q, experimentMode, trueX, potentialDifference
 }) => {
   const wireRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  const isBalanced = Math.abs(jockeyPos - balancePoint) < 0.1;
+  
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (isDragging && wireRef.current) {
       const rect = wireRef.current.getBoundingClientRect();
@@ -85,6 +87,7 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (document.activeElement?.tagName === 'INPUT') return;
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         onJockeyMove(Math.max(0, jockeyPos - 0.01));
@@ -101,8 +104,7 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
     };
   }, [jockeyPos, onJockeyMove]);
   
-  const needleRotation = Math.max(-50, Math.min(50, potentialDifference));
-  const isBalanced = Math.abs(jockeyPos - balancePoint) < 0.1;
+  const needleRotation = Math.max(-50, Math.min(50, potentialDifference * 100)); // Scale for better visibility
 
   let rBoxLabel = "?";
   let xBoxLabel = "?";
@@ -121,8 +123,8 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
     xBoxValue = isSwapped ? knownR : '0.0 Ω';
   }
 
-  const rIcon = experimentMode === 'findX' && !isSwapped ? Zap : experimentMode === 'findRho' && !isSwapped ? Zap : (experimentMode === 'findRho' && isSwapped) ? HelpCircle : HelpCircle;
-  const xIcon = experimentMode === 'findX' && isSwapped ? Zap : experimentMode === 'findRho' && isSwapped ? Zap : (experimentMode === 'findRho' && !isSwapped) ? HelpCircle : HelpCircle;
+  const rIcon = (experimentMode === 'findX' && !isSwapped) || (experimentMode === 'findRho' && !isSwapped) ? Settings : HelpCircle;
+  const xIcon = (experimentMode === 'findX' && isSwapped) || (experimentMode === 'findRho' && isSwapped) ? Settings : HelpCircle;
 
 
   return (
@@ -217,6 +219,9 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
                   style={{ left: `${jockeyPos}%`, transform: 'translateX(-50%)' }}
                   onMouseDown={() => setIsDragging(true)}
                 >
+                   <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-background/80 px-1.5 py-0.5 rounded-md text-xs font-mono backdrop-blur-sm">
+                      {jockeyPos.toFixed(2)}
+                   </div>
                 </div>
             </div>
           </div>
@@ -264,7 +269,7 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
 
         <Card>
           <CardContent className="p-3 text-sm">
-            <p><strong>Potential Difference:</strong> {potentialDifference.toFixed(4)}</p>
+            <p><strong>Potential Difference:</strong> {potentialDifference.toFixed(4)} V</p>
             <p><strong>Jockey Position:</strong> {jockeyPos.toFixed(4)} cm</p>
           </CardContent>
         </Card>
@@ -275,3 +280,5 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
 };
 
 export default BridgeSimulation;
+
+    

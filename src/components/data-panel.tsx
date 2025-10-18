@@ -5,7 +5,7 @@ import type { Reading, ExperimentMode } from '@/app/page';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Bot, Loader2, Repeat, Eye, EyeOff } from 'lucide-react';
+import { Sparkles, Bot, Loader2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
@@ -30,6 +30,8 @@ interface DataPanelProps {
   isTrueValueRevealed: boolean;
   onRevealToggle: () => void;
   experimentMode: ExperimentMode;
+  isSwapped: boolean;
+  knownR: number;
 }
 
 const suggestionFormSchema = z.object({
@@ -40,7 +42,7 @@ const suggestionFormSchema = z.object({
 
 
 const DataPanel: React.FC<DataPanelProps> = ({
-  readings, selectedReadingId, onSelectReading, aiSuggestion, isAiLoading, onGetSuggestion, selectedReading, trueXValue, wireResistancePerCm, isTrueValueRevealed, onRevealToggle, experimentMode
+  readings, selectedReadingId, onSelectReading, aiSuggestion, isAiLoading, onGetSuggestion, selectedReading, trueXValue, wireResistancePerCm, isTrueValueRevealed, onRevealToggle, experimentMode, isSwapped, knownR
 }) => {
 
   const form = useForm<z.infer<typeof suggestionFormSchema>>({
@@ -49,7 +51,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
   });
 
   useEffect(() => {
-    if (selectedReading) {
+    if (selectedReading && selectedReading.l1 !== null) {
       const approxX = experimentMode === 'findX' ? (selectedReading.rValue + (2 * selectedReading.l1 - 100) * wireResistancePerCm) : 0;
       form.reset({
         R: selectedReading.rValue,
@@ -66,46 +68,40 @@ const DataPanel: React.FC<DataPanelProps> = ({
   const { finalCalculatedX, calculationErrorX, deviationX } = useMemo(() => {
     if (experimentMode !== 'findX') return { finalCalculatedX: null, calculationErrorX: null, deviationX: null };
     
-    const normalReading = readings.find(r => !r.isSwapped);
-    const swappedReading = readings.find(r => r.isSwapped);
-
-    if (normalReading && swappedReading) {
-      if (normalReading.rValue !== swappedReading.rValue) {
-        return { finalCalculatedX: null, calculationErrorX: "R values must be the same for both readings.", deviationX: null };
-      }
-      const R = normalReading.rValue;
-      const l1_normal = normalReading.l1;
-      const l1_swapped = swappedReading.l1;
-      
-      const calculatedX = R + wireResistancePerCm * (l1_swapped - l1_normal);
-      const deviation = trueXValue !== 0 ? ((calculatedX - trueXValue) / trueXValue) * 100 : 0;
-
-      return { finalCalculatedX: calculatedX, calculationErrorX: null, deviationX: deviation };
+    const completeReadings = readings.filter(r => r.l1 !== null && r.l2 !== null);
+    if (completeReadings.length === 0) {
+      return { finalCalculatedX: null, calculationErrorX: "Requires a complete reading (l1 & l2).", deviationX: null };
     }
-    return { finalCalculatedX: null, calculationErrorX: "Requires one normal and one swapped reading.", deviationX: null };
+
+    const calculatedXs = completeReadings.map(r => {
+      return r.rValue + wireResistancePerCm * (r.l2! - r.l1!);
+    });
+
+    const averageX = calculatedXs.reduce((sum, x) => sum + x, 0) / calculatedXs.length;
+    const deviation = trueXValue !== 0 ? ((averageX - trueXValue) / trueXValue) * 100 : 0;
+
+    return { finalCalculatedX: averageX, calculationErrorX: null, deviationX: deviation };
   }, [readings, wireResistancePerCm, trueXValue, experimentMode]);
 
   const { finalCalculatedRho, calculationErrorRho } = useMemo(() => {
-    if (experimentMode !== 'findRho' || readings.length < 2) return { finalCalculatedRho: null, calculationErrorRho: "Requires paired readings." };
+    if (experimentMode !== 'findRho') return { finalCalculatedRho: null, calculationErrorRho: null };
     
-    const normalReadings = readings.filter(r => !r.isSwapped);
-    const swappedReadings = readings.filter(r => r.isSwapped);
+    const completeReadings = readings.filter(r => r.l1 !== null && r.l2 !== null);
+    if (completeReadings.length === 0) {
+        return { finalCalculatedRho: null, calculationErrorRho: "Requires a complete reading (l1 & l2)." };
+    }
     
-    const rhos = [];
-    for (const rNormal of normalReadings) {
-        const rSwapped = swappedReadings.find(r => r.rValue === rNormal.rValue);
-        if (rSwapped) {
-            const rho = rNormal.rValue / (rSwapped.l1 - rNormal.l1);
-            if(isFinite(rho)) rhos.push(rho);
-        }
+    const rhos = completeReadings.map(r => {
+        const diff = r.l2! - r.l1!;
+        return diff !== 0 ? r.rValue / diff : null;
+    }).filter((rho): rho is number => rho !== null);
+
+    if (rhos.length === 0) {
+        return { finalCalculatedRho: null, calculationErrorRho: "l1 and l2 cannot be the same." };
     }
 
-    if(rhos.length > 0) {
-        const avgRho = rhos.reduce((a, b) => a + b, 0) / rhos.length;
-        return { finalCalculatedRho: avgRho, calculationErrorRho: null };
-    }
-
-    return { finalCalculatedRho: null, calculationErrorRho: "No matching normal/swapped pairs." };
+    const avgRho = rhos.reduce((a, b) => a + b, 0) / rhos.length;
+    return { finalCalculatedRho: avgRho, calculationErrorRho: null };
   }, [readings, experimentMode]);
 
 
@@ -117,7 +113,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
             <div className="font-semibold flex justify-between">
                 <span>Final Calculated X:</span>
                 {isCalculated ? (
-                    <span>{finalCalculatedX.toFixed(4)} Ω</span>
+                    <span className="font-mono">{finalCalculatedX.toFixed(4)} Ω</span>
                 ) : (
                     <span className="text-xs text-muted-foreground">{calculationErrorX}</span>
                 )}
@@ -131,10 +127,10 @@ const DataPanel: React.FC<DataPanelProps> = ({
                         {deviationX.toFixed(1)}% dev.
                       </Badge>
                     )}
-                    <span>{trueXValue.toFixed(4)} Ω</span>
+                    <span className="font-mono">{trueXValue.toFixed(4)} Ω</span>
                   </div>
                 ) : (
-                  <span>? Ω</span>
+                  <span className='font-mono'>? Ω</span>
                 )}
             </div>
             <Button onClick={onRevealToggle} variant="outline" size="sm" className="w-full mt-2">
@@ -145,11 +141,12 @@ const DataPanel: React.FC<DataPanelProps> = ({
         );
       }
       if (experimentMode === 'findRho') {
+        const isCalculated = finalCalculatedRho !== null;
         return (
              <div className="font-semibold flex justify-between">
                 <span>Calculated ρ:</span>
-                {finalCalculatedRho !== null ? (
-                    <span>{finalCalculatedRho.toFixed(4)} Ω/cm</span>
+                {isCalculated ? (
+                    <span className='font-mono'>{finalCalculatedRho.toFixed(4)} Ω/cm</span>
                 ) : (
                     <span className="text-xs text-muted-foreground">{calculationErrorRho}</span>
                 )}
@@ -158,6 +155,22 @@ const DataPanel: React.FC<DataPanelProps> = ({
       }
       return null;
   }
+  
+  const getInstruction = () => {
+      const readingForCurrentR = readings.find(r => r.rValue === knownR);
+
+      if (!readingForCurrentR || readingForCurrentR.l1 === null) {
+          return "Find balance point for l₁ (normal position).";
+      }
+      if (readingForCurrentR.l2 === null) {
+          if (isSwapped) {
+              return "Find balance point for l₂ (swapped position).";
+          } else {
+              return "Swap gaps to find balance point for l₂.";
+          }
+      }
+      return "Reading complete for this R. Change R for a new set.";
+  };
 
 
   return (
@@ -174,19 +187,25 @@ const DataPanel: React.FC<DataPanelProps> = ({
           </TabsList>
           <TabsContent value="data" className="mt-4 flex-grow flex flex-col">
             <Card className="h-full flex flex-col">
+               <div className="p-3 border-b bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300">
+                    <div className="flex items-center gap-3">
+                        <AlertTriangle className="h-5 w-5" />
+                        <div className="text-sm font-medium">
+                            <p>Next Step:</p>
+                            <p className="font-semibold">{getInstruction()}</p>
+                        </div>
+                    </div>
+                </div>
               <ScrollArea className="flex-grow">
                 <Table>
                   <TableCaption>
-                    {experimentMode === 'findX' 
-                      ? "Record a reading in both normal and swapped positions." 
-                      : "Record readings for different R values in normal and swapped positions."}
+                    Select a row to use it for AI suggestions.
                   </TableCaption>
                   <TableHeader className="sticky top-0 bg-card z-10">
                     <TableRow>
                       <TableHead>R (Ω)</TableHead>
                       <TableHead>l₁ (cm)</TableHead>
                       <TableHead>l₂ (cm)</TableHead>
-                      <TableHead>Position</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -197,18 +216,12 @@ const DataPanel: React.FC<DataPanelProps> = ({
                         onClick={() => onSelectReading(reading.id)}
                       >
                         <TableCell>{reading.rValue.toFixed(2)}</TableCell>
-                        <TableCell>{reading.l1.toFixed(2)}</TableCell>
-                        <TableCell>{reading.l2.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                             {reading.isSwapped ? <Repeat className="w-4 h-4 text-blue-500" /> : <div className="w-4 h-4"/>}
-                             {reading.isSwapped ? 'Swapped' : 'Normal'}
-                          </div>
-                        </TableCell>
+                        <TableCell>{reading.l1 !== null ? reading.l1.toFixed(2) : '...'}</TableCell>
+                        <TableCell>{reading.l2 !== null ? reading.l2.toFixed(2) : '...'}</TableCell>
                       </TableRow>
                     )) : (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center h-48">No data recorded yet.</TableCell>
+                        <TableCell colSpan={3} className="text-center h-48">No data recorded yet.</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -224,7 +237,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
               <Card className="h-full">
                 <CardContent className="p-6 space-y-6">
                   <p className="text-sm text-muted-foreground">
-                    If you're stuck, select a reading and ask the AI for advice on how to get a more accurate result.
+                    If you're stuck, select a reading with at least l₁ recorded and ask the AI for advice.
                   </p>
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -232,26 +245,26 @@ const DataPanel: React.FC<DataPanelProps> = ({
                         <FormField control={form.control} name="R" render={({ field }) => (
                             <FormItem>
                               <FormLabel>R (Ω)</FormLabel>
-                              <FormControl><Input readOnly type="number" {...field} value={field.value.toFixed(2)}/></FormControl>
+                              <FormControl><Input readOnly type="number" {...field} value={field.value?.toFixed(2) ?? ''}/></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
                         <FormField control={form.control} name="l1" render={({ field }) => (
                             <FormItem>
                               <FormLabel>l₁ (cm)</FormLabel>
-                              <FormControl><Input readOnly type="number" {...field} value={field.value.toFixed(2)}/></FormControl>
+                              <FormControl><Input readOnly type="number" {...field} value={field.value?.toFixed(2) ?? ''}/></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
                          <FormField control={form.control} name="X" render={({ field }) => (
                             <FormItem>
                               <FormLabel>Approx. X (Ω)</FormLabel>
-                              <FormControl><Input readOnly type="number" {...field} value={field.value.toFixed(2)}/></FormControl>
+                              <FormControl><Input readOnly type="number" {...field} value={field.value?.toFixed(2) ?? ''}/></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
                       </div>
-                      <Button type="submit" className="w-full" disabled={isAiLoading || !selectedReading}>
+                      <Button type="submit" className="w-full" disabled={isAiLoading || !selectedReading || selectedReading.l1 === null}>
                         {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                         Get Help
                       </Button>
@@ -282,3 +295,5 @@ const DataPanel: React.FC<DataPanelProps> = ({
 };
 
 export default DataPanel;
+
+    

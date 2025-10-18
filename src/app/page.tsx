@@ -28,9 +28,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 export type Reading = {
   id: number;
   rValue: number;
-  l1: number;
-  l2: number;
-  isSwapped: boolean; 
+  l1: number | null; // Balance point in normal position
+  l2: number | null; // Balance point in swapped position
 };
 
 export type ExperimentMode = 'findX' | 'findRho';
@@ -83,21 +82,54 @@ export default function Home() {
 
 
   const handleRecord = useCallback(() => {
-    const l1 = jockeyPos;
-    const newReading: Reading = {
-      id: Date.now(),
-      rValue: knownR,
-      l1: parseFloat(l1.toFixed(2)),
-      l2: parseFloat((100 - l1).toFixed(2)),
-      isSwapped: isSwapped,
-    };
-    setReadings(prev =>
-      produce(prev, draft => {
-        draft[experimentMode].push(newReading);
-      })
-    );
-    setSelectedReadingId(newReading.id);
-  }, [jockeyPos, knownR, isSwapped, experimentMode]);
+    const currentPos = parseFloat(jockeyPos.toFixed(2));
+    
+    setReadings(prev => produce(prev, draft => {
+        const currentReadings = draft[experimentMode];
+        let existingReadingForR = currentReadings.find(r => r.rValue === knownR);
+
+        if (isSwapped) { // Recording l2
+            if (existingReadingForR) {
+                if (existingReadingForR.l1 !== null && existingReadingForR.l2 === null) {
+                    existingReadingForR.l2 = currentPos;
+                    setSelectedReadingId(existingReadingForR.id);
+                } else {
+                     // This case might mean l1 was not set, or l2 already is.
+                     // A toast message might be good here, or just ignore.
+                }
+            } else {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Missing First Reading',
+                    description: `Please record l1 for R = ${knownR}Ω before swapping.`,
+                });
+            }
+        } else { // Recording l1
+            if (!existingReadingForR) {
+                const newReading: Reading = {
+                    id: Date.now(),
+                    rValue: knownR,
+                    l1: currentPos,
+                    l2: null,
+                };
+                currentReadings.push(newReading);
+                setSelectedReadingId(newReading.id);
+            } else {
+                 // Allow overwriting l1 if l2 is not set yet
+                if (existingReadingForR.l2 === null) {
+                    existingReadingForR.l1 = currentPos;
+                    setSelectedReadingId(existingReadingForR.id);
+                } else {
+                     toast({
+                        variant: 'destructive',
+                        title: 'Reading Complete',
+                        description: `A complete reading for R = ${knownR}Ω already exists. Please change R.`,
+                    });
+                }
+            }
+        }
+    }));
+  }, [jockeyPos, knownR, isSwapped, experimentMode, toast]);
 
   const handleSwap = () => {
     setIsSwapped(prev => !prev);
@@ -122,14 +154,15 @@ export default function Home() {
   const selectedReading = useMemo(() => currentReadings.find(r => r.id === selectedReadingId), [currentReadings, selectedReadingId]);
 
   const calculatedXForAI = useMemo(() => {
-    if(!selectedReading || experimentMode !== 'findX') return 0;
+    if(!selectedReading || experimentMode !== 'findX' || selectedReading.l1 === null) return 0;
     const { rValue, l1 } = selectedReading;
+    // This is an approximation for the AI, not the final calculation
     const approxX = rValue + (2 * l1 - 100) * WIRE_RESISTANCE_PER_CM;
     return approxX;
   }, [selectedReading, WIRE_RESISTANCE_PER_CM, experimentMode]);
 
   const handleGetSuggestion = useCallback(async () => {
-    if (!selectedReading || experimentMode === 'findRho') return;
+    if (!selectedReading || experimentMode === 'findRho' || selectedReading.l1 === null) return;
 
     setIsAiLoading(true);
     setAiSuggestion('');
@@ -137,7 +170,7 @@ export default function Home() {
     const input: SuggestResistanceValuesInput = {
         R: selectedReading.rValue,
         l1: selectedReading.l1,
-        l2: 100 - selectedReading.l1,
+        l2: 100 - selectedReading.l1, // Legacy l2 for prompt
         X: parseFloat(calculatedXForAI.toFixed(2))
     };
 
@@ -172,7 +205,7 @@ export default function Home() {
       });
     }
   };
-
+  
   const handleGenerateReport = () => {
     const reportData = JSON.stringify({
       readings: readings,
@@ -262,7 +295,6 @@ export default function Home() {
                       onKnownRChange={setKnownR}
                       jockeyPos={jockeyPos}
                       onJockeyMove={setJockeyPos}
-                      potentialDifference={potentialDifference}
                       onRecord={handleRecord}
                       onReset={handleReset}
                       balancePoint={balancePoint}
@@ -272,6 +304,7 @@ export default function Home() {
                       Q={Q}
                       experimentMode={experimentMode}
                       trueX={trueX}
+                      potentialDifference={potentialDifference}
                     />
                   </div>
                   <div className="lg:col-span-2">
@@ -288,6 +321,8 @@ export default function Home() {
                       isTrueValueRevealed={isTrueValueRevealed}
                       onRevealToggle={() => setIsTrueValueRevealed(prev => !prev)}
                       experimentMode={experimentMode}
+                      isSwapped={isSwapped}
+                      knownR={knownR}
                     />
                   </div>
                 </div>
@@ -300,7 +335,6 @@ export default function Home() {
                       onKnownRChange={setKnownR}
                       jockeyPos={jockeyPos}
                       onJockeyMove={setJockeyPos}
-                      potentialDifference={potentialDifference}
                       onRecord={handleRecord}
                       onReset={handleReset}
                       balancePoint={balancePoint}
@@ -310,6 +344,7 @@ export default function Home() {
                       Q={Q}
                       experimentMode={experimentMode}
                       trueX={trueX}
+                      potentialDifference={potentialDifference}
                     />
                   </div>
                   <div className="lg:col-span-2">
@@ -319,7 +354,6 @@ export default function Home() {
                       onSelectReading={setSelectedReadingId}
                       aiSuggestion={aiSuggestion}
                       isAiLoading={isAiLoading}
-      
                       onGetSuggestion={handleGetSuggestion}
                       selectedReading={selectedReading}
                       trueXValue={trueX}
@@ -327,6 +361,8 @@ export default function Home() {
                       isTrueValueRevealed={isTrueValueRevealed}
                       onRevealToggle={() => setIsTrueValueRevealed(prev => !prev)}
                       experimentMode={experimentMode}
+                      isSwapped={isSwapped}
+                      knownR={knownR}
                     />
                   </div>
                 </div>
@@ -339,5 +375,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

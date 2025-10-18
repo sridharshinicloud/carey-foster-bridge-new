@@ -29,7 +29,6 @@ const ReportPage = () => {
     if (data) {
       try {
         const parsedData = JSON.parse(data);
-        // Basic validation
         if (parsedData && parsedData.readings && parsedData.readings.findX && parsedData.readings.findRho) {
           setReportData(parsedData);
         } else {
@@ -47,59 +46,47 @@ const ReportPage = () => {
   const { finalCalculatedX, calculationErrorX, deviationX } = useMemo(() => {
     if (!reportData || !reportData.readings.findX) return { finalCalculatedX: null, calculationErrorX: null, deviationX: null };
     
-    const findXReadings = reportData.readings.findX;
-    const normalReading = findXReadings.find(r => !r.isSwapped);
-    const swappedReading = findXReadings.find(r => r.isSwapped);
+    const findXReadings = reportData.readings.findX.filter(r => r.l1 !== null && r.l2 !== null);
 
-    if (!normalReading || !swappedReading) {
-      return { finalCalculatedX: null, calculationErrorX: "Requires one normal and one swapped reading.", deviationX: null };
+    if (findXReadings.length === 0) {
+      return { finalCalculatedX: null, calculationErrorX: "Requires at least one complete reading (l1 and l2).", deviationX: null };
     }
     
-    if (normalReading.rValue !== swappedReading.rValue) {
-      return { finalCalculatedX: null, calculationErrorX: "The number of normal and swapped readings must be equal.", deviationX: null };
-    }
-
-    const R = normalReading.rValue;
-    const l1_normal = normalReading.l1;
-    const l1_swapped = swappedReading.l1;
+    const calculatedXs = findXReadings.map(reading => {
+      const R = reading.rValue;
+      const l1_normal = reading.l1!;
+      const l1_swapped = reading.l2!; // l2 is the balance point when swapped
+      return R + reportData.trueRho * (l1_swapped - l1_normal);
+    });
     
-    const calculatedX = R + reportData.trueRho * (l1_swapped - l1_normal);
-    const deviation = reportData.trueX !== 0 ? ((calculatedX - reportData.trueX) / reportData.trueX) * 100 : 0;
+    const averageX = calculatedXs.reduce((acc, val) => acc + val, 0) / calculatedXs.length;
+    const deviation = reportData.trueX !== 0 ? ((averageX - reportData.trueX) / reportData.trueX) * 100 : 0;
 
-    return { finalCalculatedX: calculatedX, calculationErrorX: null, deviationX: deviation };
+    return { finalCalculatedX: averageX, calculationErrorX: null, deviationX: deviation };
   }, [reportData]);
 
   const { finalCalculatedRho, calculationErrorRho, deviationRho } = useMemo(() => {
     if (!reportData || !reportData.readings.findRho) return { finalCalculatedRho: null, calculationErrorRho: null, deviationRho: null };
     
-    const findRhoReadings = reportData.readings.findRho;
-    const normalReadings = findRhoReadings.filter(r => !r.isSwapped);
-    const swappedReadings = findRhoReadings.filter(r => r.isSwapped);
-
-    if (normalReadings.length === 0 || swappedReadings.length === 0) {
-      return { finalCalculatedRho: null, calculationErrorRho: "Requires at least one normal and one swapped reading.", deviationRho: null };
+    const findRhoReadings = reportData.readings.findRho.filter(r => r.l1 !== null && r.l2 !== null);
+    
+    if (findRhoReadings.length === 0) {
+      return { finalCalculatedRho: null, calculationErrorRho: "Requires at least one complete reading (l1 and l2).", deviationRho: null };
     }
 
-    const calculatedRhos = [];
-    for (let i = 0; i < normalReadings.length; i++) {
-        const normalReading = normalReadings[i];
-        const swappedReading = swappedReadings.find(sr => sr.rValue === normalReading.rValue);
-        
-        if (!swappedReading) {
-            continue;
-        }
-
-        const R = normalReading.rValue;
-        const l1_normal = normalReading.l1;
-        const l1_swapped = swappedReading.l1;
+    const calculatedRhos = findRhoReadings.map(reading => {
+        const R = reading.rValue;
+        const l1_normal = reading.l1!;
+        const l1_swapped = reading.l2!;
         
         if (l1_swapped - l1_normal !== 0) {
-           calculatedRhos.push(R / (l1_swapped - l1_normal));
+           return R / (l1_swapped - l1_normal);
         }
-    }
+        return null;
+    }).filter((rho): rho is number => rho !== null);
     
     if(calculatedRhos.length === 0) {
-      return { finalCalculatedRho: null, calculationErrorRho: "Could not calculate ρ. Ensure l₁ values are different between normal and swapped readings.", deviationRho: null };
+      return { finalCalculatedRho: null, calculationErrorRho: "Could not calculate ρ. Ensure l₁ and l₂ values are different.", deviationRho: null };
     }
 
     const averageRho = calculatedRhos.reduce((acc, val) => acc + val, 0) / calculatedRhos.length;
@@ -124,7 +111,6 @@ const ReportPage = () => {
             <TableHead>R (Ω)</TableHead>
             <TableHead>l₁ (cm)</TableHead>
             <TableHead>l₂ (cm)</TableHead>
-            <TableHead>Position</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -132,9 +118,8 @@ const ReportPage = () => {
             <TableRow key={reading.id}>
               <TableCell>{index + 1}</TableCell>
               <TableCell>{reading.rValue.toFixed(2)}</TableCell>
-              <TableCell>{reading.l1.toFixed(2)}</TableCell>
-              <TableCell>{reading.l2.toFixed(2)}</TableCell>
-              <TableCell>{reading.isSwapped ? 'Swapped' : 'Normal'}</TableCell>
+              <TableCell>{reading.l1 !== null ? reading.l1.toFixed(2) : 'N/A'}</TableCell>
+              <TableCell>{reading.l2 !== null ? reading.l2.toFixed(2) : 'N/A'}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -237,3 +222,5 @@ const ReportPage = () => {
 };
 
 export default ReportPage;
+
+    
