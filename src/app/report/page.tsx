@@ -55,8 +55,9 @@ const ReportPage = () => {
     const calculatedXs = findXReadings.map(reading => {
       const R = reading.rValue;
       const l1_normal = reading.l1!;
-      const l1_swapped = reading.l2!; // l2 is the balance point when swapped
-      return R + reportData.trueRho * (l1_swapped - l1_normal);
+      const l2_swapped = reading.l2!; // l2 is the balance point when swapped
+      // This is the correct formula for the Carey Foster Bridge for X
+      return R + reportData.trueRho * (l2_swapped - l1_normal);
     });
     
     const averageX = calculatedXs.reduce((acc, val) => acc + val, 0) / calculatedXs.length;
@@ -77,10 +78,10 @@ const ReportPage = () => {
     const calculatedRhos = findRhoReadings.map(reading => {
         const R = reading.rValue;
         const l1_normal = reading.l1!;
-        const l1_swapped = reading.l2!;
+        const l2_swapped = reading.l2!;
         
-        if (l1_swapped - l1_normal !== 0) {
-           return R / (l1_swapped - l1_normal);
+        if (l2_swapped - l1_normal !== 0) {
+           return R / (l2_swapped - l1_normal);
         }
         return null;
     }).filter((rho): rho is number => rho !== null);
@@ -111,7 +112,8 @@ const ReportPage = () => {
             <TableHead>R (Ω)</TableHead>
             <TableHead>l₁ (cm)</TableHead>
             <TableHead>l₂ (cm)</TableHead>
-            {mode === 'findRho' && <TableHead>l₂-l₁ (cm)</TableHead>}
+            <TableHead>l₂-l₁ (cm)</TableHead>
+            {mode === 'findX' && <TableHead>Calc. X (Ω)</TableHead>}
             {mode === 'findRho' && <TableHead>ρ (Ω/cm)</TableHead>}
           </TableRow>
         </TableHeader>
@@ -120,9 +122,15 @@ const ReportPage = () => {
             const isComplete = reading.l1 !== null && reading.l2 !== null;
             let diff = null;
             let rho = null;
-            if (mode === 'findRho' && isComplete) {
+            let calculatedX = null;
+            if (isComplete) {
               diff = reading.l2! - reading.l1!;
-              rho = diff !== 0 ? reading.rValue / diff : null;
+              if (mode === 'findRho') {
+                rho = diff !== 0 ? reading.rValue / diff : null;
+              }
+              if (mode === 'findX') {
+                calculatedX = reading.rValue + reportData.trueRho * diff;
+              }
             }
             return (
               <TableRow key={reading.id}>
@@ -130,11 +138,12 @@ const ReportPage = () => {
                 <TableCell>{reading.rValue.toFixed(2)}</TableCell>
                 <TableCell>{reading.l1 !== null ? reading.l1.toFixed(2) : 'N/A'}</TableCell>
                 <TableCell>{reading.l2 !== null ? reading.l2.toFixed(2) : 'N/A'}</TableCell>
+                <TableCell>{isComplete && diff !== null ? diff.toFixed(2) : 'N/A'}</TableCell>
+                {mode === 'findX' && (
+                  <TableCell>{isComplete && calculatedX !== null ? calculatedX.toFixed(4) : 'N/A'}</TableCell>
+                )}
                 {mode === 'findRho' && (
-                  <>
-                    <TableCell>{isComplete ? diff!.toFixed(2) : 'N/A'}</TableCell>
-                    <TableCell>{isComplete && rho !== null ? rho.toFixed(4) : 'N/A'}</TableCell>
-                  </>
+                  <TableCell>{isComplete && rho !== null ? rho.toFixed(4) : 'N/A'}</TableCell>
                 )}
               </TableRow>
             );

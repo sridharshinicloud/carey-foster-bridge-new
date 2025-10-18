@@ -207,6 +207,12 @@ const DataPanel: React.FC<DataPanelProps> = ({
                       <TableHead>R (Ω)</TableHead>
                       <TableHead>l₁ (cm)</TableHead>
                       <TableHead>l₂ (cm)</TableHead>
+                      {experimentMode === 'findX' && (
+                        <>
+                          <TableHead>l₂-l₁ (cm)</TableHead>
+                          <TableHead>Calc. X (Ω)</TableHead>
+                        </>
+                      )}
                       {experimentMode === 'findRho' && (
                         <>
                           <TableHead>l₂-l₁ (cm)</TableHead>
@@ -221,9 +227,16 @@ const DataPanel: React.FC<DataPanelProps> = ({
                       const isComplete = reading.l1 !== null && reading.l2 !== null;
                       let diff = null;
                       let rho = null;
-                      if (experimentMode === 'findRho' && isComplete) {
-                          diff = reading.l2! - reading.l1!;
+                      let calculatedX = null;
+
+                      if (isComplete) {
+                        diff = reading.l2! - reading.l1!;
+                        if (experimentMode === 'findRho') {
                           rho = diff !== 0 ? reading.rValue / diff : null;
+                        }
+                        if (experimentMode === 'findX') {
+                          calculatedX = reading.rValue + wireResistancePerCm * diff;
+                        }
                       }
 
                       return (
@@ -235,6 +248,12 @@ const DataPanel: React.FC<DataPanelProps> = ({
                           <TableCell>{reading.rValue.toFixed(2)}</TableCell>
                           <TableCell>{reading.l1 !== null ? reading.l1.toFixed(2) : '...'}</TableCell>
                           <TableCell>{reading.l2 !== null ? reading.l2.toFixed(2) : '...'}</TableCell>
+                           {experimentMode === 'findX' && (
+                            <>
+                              <TableCell>{isComplete && diff !== null ? diff.toFixed(2) : '...'}</TableCell>
+                              <TableCell>{isComplete && calculatedX !== null ? calculatedX.toFixed(4) : '...'}</TableCell>
+                            </>
+                          )}
                            {experimentMode === 'findRho' && (
                             <>
                               <TableCell>{isComplete && diff !== null ? diff.toFixed(2) : '...'}</TableCell>
@@ -258,7 +277,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
                       );
                     }) : (
                       <TableRow>
-                        <TableCell colSpan={experimentMode === 'findRho' ? 6 : 4} className="text-center h-48">No data recorded yet.</TableCell>
+                        <TableCell colSpan={experimentMode === 'findRho' ? 6 : 6} className="text-center h-48">No data recorded yet.</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
