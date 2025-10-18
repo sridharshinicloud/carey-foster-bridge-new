@@ -321,6 +321,7 @@ export default function Home() {
                       onSelectReading={setSelectedReadingId}
                       aiSuggestion={aiSuggestion}
                       isAiLoading={isAiLoading}
+      
                       onGetSuggestion={handleGetSuggestion}
                       selectedReading={selectedReading}
                       trueXValue={trueX}
