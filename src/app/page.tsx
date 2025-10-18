@@ -67,37 +67,19 @@ export default function Home() {
       rRight = isSwapped ? knownR : trueX;
     } else { // findRho
       const copperStripResistance = 0.0;
-      rLeft = isSwapped ? copperStripResistance : knownR;
-      rRight = isSwapped ? knownR : copperStripResistance;
+      rLeft = isSwapped ? knownR : copperStripResistance;
+      rRight = isSwapped ? copperStripResistance : knownR;
     }
 
     const resistanceDifference = rRight - rLeft;
     const balanceShift = resistanceDifference / (2 * WIRE_RESISTANCE_PER_CM);
     return 50 + balanceShift;
-  }, [isSwapped, knownR, trueX, WIRE_RESISTANCE_PER_CM, experimentMode]);
+  }, [isSwapped, knownR, experimentMode, WIRE_RESISTANCE_PER_CM, trueX]);
 
   const potentialDifference = useMemo(() => {
-    let rLeft, rRight;
-    if (experimentMode === 'findX') {
-        rLeft = isSwapped ? trueX : knownR;
-        rRight = isSwapped ? knownR : trueX;
-    } else { // findRho
-        const copperStripResistance = 0.0;
-        rLeft = isSwapped ? copperStripResistance : knownR;
-        rRight = isSwapped ? knownR : copperStripResistance;
-    }
-    const totalResistance = rLeft + rRight + 100 * WIRE_RESISTANCE_PER_CM;
-    // Assuming a 2V battery for simplicity
-    const current = 2 / (P + Q + totalResistance);
-    
-    const potentialAtJockey = (jockeyPos * WIRE_RESISTANCE_PER_CM + rLeft) * current;
-    const potentialAtMid = (rLeft + P) * current;
-    
-    const calculatedPotentialDifference = potentialAtJockey - potentialAtMid;
-    const sensitivityFactor = 0.1;
-
-    return calculatedPotentialDifference / sensitivityFactor;
-}, [jockeyPos, knownR, trueX, isSwapped, experimentMode, WIRE_RESISTANCE_PER_CM, P, Q]);
+    const sensitivityFactor = 5; // This determines how much the needle moves.
+    return (jockeyPos - balancePoint) * sensitivityFactor;
+  }, [jockeyPos, balancePoint]);
 
 
   const handleRecord = useCallback(() => {
