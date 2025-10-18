@@ -244,11 +244,16 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
           </div>
         </div>
 
+        <Card>
+          <CardContent className="p-3 text-sm">
+            <p><strong>Potential Difference:</strong> {potentialDifference.toFixed(4)}</p>
+            <p><strong>Balance Point:</strong> {balancePoint.toFixed(4)} cm</p>
+          </CardContent>
+        </Card>
+
       </CardContent>
     </Card>
   );
 };
 
 export default BridgeSimulation;
-
-    
