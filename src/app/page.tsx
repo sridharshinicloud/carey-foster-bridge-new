@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Zap, Info, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,6 +51,9 @@ export default function Home() {
   const [isTrueValueRevealed, setIsTrueValueRevealed] = useState(false);
   const [newTrueXInput, setNewTrueXInput] = useState(trueX.toString());
   const [isInstructionDialogOpen, setIsInstructionDialogOpen] = useState(true);
+  const [isReportInputDialogOpen, setIsReportInputDialogOpen] = useState(false);
+  const [wireRadius, setWireRadius] = useState('');
+  const [wireLength, setWireLength] = useState('');
   const [isValueLocked, setIsValueLocked] = useState(false);
   const [experimentMode, setExperimentMode] = useState<ExperimentMode>('findX');
   const { toast } = useToast();
@@ -218,10 +222,24 @@ export default function Home() {
   };
   
   const handleGenerateReport = () => {
+    const radius = parseFloat(wireRadius);
+    const length = parseFloat(wireLength);
+
+    if (isNaN(radius) || radius <= 0 || isNaN(length) || length <= 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Input',
+        description: 'Please enter valid, positive numbers for radius and length.',
+      });
+      return;
+    }
+    
     const reportData = JSON.stringify({
       readings: readings,
       trueX: trueX,
       trueRho: WIRE_RESISTANCE_PER_CM,
+      wireRadius: radius,
+      wireLength: length,
     });
     sessionStorage.setItem('reportData', reportData);
     router.push('/report');
@@ -251,7 +269,7 @@ export default function Home() {
            </div>
            
            <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={handleGenerateReport} disabled={readings.findX.length === 0 && readings.findRho.length === 0}>
+            <Button variant="secondary" onClick={() => setIsReportInputDialogOpen(true)} disabled={readings.findX.length === 0 && readings.findRho.length === 0}>
                 <FileText className="mr-2 h-4 w-4" />
                 Generate Report
             </Button>
@@ -293,9 +311,56 @@ export default function Home() {
               </AlertDialogContent>
             </AlertDialog>
            </div>
-
         </div>
       </header>
+
+      <Dialog open={isReportInputDialogOpen} onOpenChange={setIsReportInputDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter Wire Dimensions</DialogTitle>
+            <DialogDescription>
+              Provide the dimensions of the unknown resistance wire to calculate its specific resistance.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="wire-radius" className="text-right">
+                Radius (r)
+              </Label>
+              <div className="col-span-3 flex items-center gap-2">
+                <Input
+                  id="wire-radius"
+                  type="number"
+                  value={wireRadius}
+                  onChange={(e) => setWireRadius(e.target.value)}
+                  placeholder="e.g., 0.2"
+                />
+                <span>x10⁻³ m</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="wire-length" className="text-right">
+                Length (L)
+              </Label>
+              <div className="col-span-3 flex items-center gap-2">
+                <Input
+                  id="wire-length"
+                  type="number"
+                  value={wireLength}
+                  onChange={(e) => setWireLength(e.target.value)}
+                  placeholder="e.g., 1.5"
+                />
+                <span>m</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsReportInputDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleGenerateReport}>Confirm & Generate Report</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <main className="flex-grow container mx-auto p-4 md:p-8">
         <Tabs value={experimentMode} onValueChange={onTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2">

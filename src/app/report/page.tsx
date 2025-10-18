@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Printer, ArrowLeft } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 type AllReadings = {
   findX: Reading[];
@@ -18,6 +19,8 @@ type ReportData = {
   readings: AllReadings;
   trueX: number;
   trueRho: number;
+  wireRadius: number;
+  wireLength: number;
 };
 
 const ReportPage = () => {
@@ -95,6 +98,13 @@ const ReportPage = () => {
 
     return { finalCalculatedRho: averageRho, calculationErrorRho: null, deviationRho: deviation };
   }, [reportData]);
+
+  const specificResistanceS = useMemo(() => {
+    if (!reportData || finalCalculatedX === null) return null;
+    const r_meters = reportData.wireRadius * 1e-3;
+    const L = reportData.wireLength;
+    return (Math.PI * r_meters * r_meters * finalCalculatedX) / L;
+  }, [reportData, finalCalculatedX]);
 
 
   if (!reportData) {
@@ -221,6 +231,52 @@ const ReportPage = () => {
               <div className="mt-4">
                 {renderResults("Result for ρ", finalCalculatedRho, reportData.trueRho, calculationErrorRho, deviationRho, "Ω/cm")}
               </div>
+            </div>
+            
+            <div className="pt-8">
+                <h2 className="text-xl font-bold mb-2">Result</h2>
+                <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+                  <div>
+                      <h3 className="font-semibold mb-2">Specific Resistance of the Material (S)</h3>
+                      <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>(iii) Radius of the wire (r)</span>
+                            <span className="font-mono">{reportData.wireRadius.toFixed(2)} x10⁻³ m</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>(iv) Length of the wire (L)</span>
+                            <span className="font-mono">{reportData.wireLength.toFixed(2)} m</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>Specific resistance S = (πr²X)/L</span>
+                             {specificResistanceS !== null ? (
+                                <span className="font-mono">= {specificResistanceS.toExponential(4)} Ωm</span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">Calculation requires a value for X.</span>
+                              )}
+                          </div>
+                      </div>
+                  </div>
+                  <Separator />
+                  <div className="space-y-3 text-base">
+                      <div className="flex justify-between font-bold">
+                          <span>(i) The unknown resistance of the given coil of wire (X)</span>
+                          {finalCalculatedX !== null ? (
+                              <span className="font-mono">= {finalCalculatedX.toFixed(4)} Ω</span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground font-normal">{calculationErrorX}</span>
+                            )}
+                      </div>
+                       <div className="flex justify-between font-bold">
+                          <span>(ii) Specific resistance of the material (S)</span>
+                           {specificResistanceS !== null ? (
+                              <span className="font-mono">= {specificResistanceS.toExponential(4)} Ωm</span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground font-normal">Calculation requires a value for X.</span>
+                            )}
+                      </div>
+                  </div>
+                </div>
             </div>
 
           </CardContent>
