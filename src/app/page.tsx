@@ -77,7 +77,7 @@ export default function Home() {
   }, [isSwapped, knownR, experimentMode, WIRE_RESISTANCE_PER_CM, trueX]);
 
   const potentialDifference = useMemo(() => {
-    const sensitivityFactor = 5; // This determines how much the needle moves.
+    const sensitivityFactor = 0.005; // This determines how much the needle moves.
     return (jockeyPos - balancePoint) * sensitivityFactor;
   }, [jockeyPos, balancePoint]);
 

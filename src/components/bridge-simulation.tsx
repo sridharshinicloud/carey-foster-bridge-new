@@ -265,7 +265,7 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
         <Card>
           <CardContent className="p-3 text-sm">
             <p><strong>Potential Difference:</strong> {potentialDifference.toFixed(4)}</p>
-            <p><strong>Balance Point:</strong> {balancePoint.toFixed(4)} cm</p>
+            <p><strong>Jockey Position:</strong> {jockeyPos.toFixed(4)} cm</p>
           </CardContent>
         </Card>
 
