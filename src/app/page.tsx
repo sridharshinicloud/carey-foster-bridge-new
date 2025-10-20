@@ -259,7 +259,7 @@ export default function Home() {
         <div className="container mx-auto px-4 flex items-center justify-between">
            <div className="flex items-center gap-3">
               <Image
-                src="https://picsum.photos/seed/snulogo/150/39"
+                src="https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.snuchennai.edu.in%2F&psig=AOvVaw1XxOOqrEZQ9S2sppBmGmFJ&ust=1761067275260000&source=images&cd=vfe&opi=89978449&ved=0CBUQjRxqFwoTCIjG3v6ks5ADFQAAAAAdAAAAABAE"
                 alt="Logo"
                 width={150}
                 height={39}
