@@ -259,8 +259,8 @@ export default function Home() {
         <div className="container mx-auto px-4 flex items-center justify-between">
            <div className="flex items-center gap-3">
               <Image
-                src="https://www.snuchennai.edu.in/wp-content/uploads/2021/06/SNU_Chennai_logo_300-X-78-PX.png"
-                alt="SNU Logo"
+                src="https://picsum.photos/seed/snulogo/150/39"
+                alt="Logo"
                 width={150}
                 height={39}
                 className="rounded-lg"
