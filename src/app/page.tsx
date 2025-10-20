@@ -259,7 +259,7 @@ export default function Home() {
         <div className="container mx-auto px-4 flex items-center justify-between">
            <div className="flex items-center gap-3">
               <Image
-                src="logoSNU(1).jpg"
+                src="logoSNU.jpg"
                 alt="Logo"
                 width={150}
                 height={39}
