@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
 
+
 export type Reading = {
   id: number;
   rValue: number;
@@ -259,7 +260,7 @@ export default function Home() {
         <div className="container mx-auto px-4 flex items-center justify-between">
            <div className="flex items-center gap-3">
               <Image
-                src="/logo.png"
+                src="https://picsum.photos/seed/snulogo/150/39"
                 alt="Logo"
                 width={150}
                 height={39}
@@ -457,3 +458,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
