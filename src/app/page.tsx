@@ -254,7 +254,6 @@ export default function Home() {
 
 
   return (
-    import Image from 'next/image';
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header className="py-4 border-b">
         <div className="container mx-auto px-4 flex items-center justify-between">
