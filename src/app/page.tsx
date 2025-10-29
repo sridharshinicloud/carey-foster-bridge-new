@@ -21,12 +21,20 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Zap, Info, FileText, BookOpen } from 'lucide-react';
+import { Zap, Info, FileText, BookOpen, Sigma } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 
 export type Reading = {
@@ -37,7 +45,7 @@ export type Reading = {
 };
 
 export type ExperimentMode = 'findX' | 'findRho';
-export type TabMode = ExperimentMode | 'aim';
+export type TabMode = ExperimentMode | 'aim' | 'formula';
 
 export default function Home() {
   const [trueX, setTrueX] = useState(5.0);
@@ -254,7 +262,7 @@ export default function Home() {
   const onTabChange = (value: string) => {
     const newTab = value as TabMode;
     setActiveTab(newTab);
-    if (newTab !== 'aim') {
+    if (newTab === 'findX' || newTab === 'findRho') {
         setExperimentMode(newTab);
         setIsSwapped(false);
         setSelectedReadingId(null);
@@ -372,8 +380,9 @@ export default function Home() {
       
       <main className="flex-grow container mx-auto p-4 md:p-8">
         <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="aim"><BookOpen className="mr-2 h-4 w-4"/>Aim</TabsTrigger>
+              <TabsTrigger value="formula"><Sigma className="mr-2 h-4 w-4"/>Formula</TabsTrigger>
               <TabsTrigger value="findX">Find Unknown Resistance (X)</TabsTrigger>
               <TabsTrigger value="findRho">Find Resistance/Length (ρ)</TabsTrigger>
             </TabsList>
@@ -390,6 +399,72 @@ export default function Home() {
                     <div>
                         <h3 className="text-lg font-semibold mb-2">Apparatus Required</h3>
                         <p className="text-muted-foreground">Meter bridge, Leclanché cell, two equal resistances, variable resistance box, unknown resistance, wire, high resistance, switches, galvanometer, jockey.</p>
+                    </div>
+                </CardContent>
+               </Card>
+            </TabsContent>
+            <TabsContent value="formula" className="mt-4">
+               <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Formula and Symbols</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Formulas Used</h3>
+                      <div className="p-4 bg-muted/50 rounded-lg space-y-4 font-mono text-center">
+                        <p className="flex items-center justify-center gap-2">
+                           <span className='w-48 text-left'>(i) Resistance (X)</span>
+                           <span>X = R + (l₁ - l₂)ρ &nbsp; [Ω]</span>
+                        </p>
+                        <p className="flex items-center justify-center gap-2">
+                           <span className='w-48 text-left'>(ii) Specific Resistance (S)</span>
+                           <span>S = (Xπr²)/L &nbsp; [Ωm]</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-semibold mb-2">Symbols</h3>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Symbol</TableHead>
+                              <TableHead>Description</TableHead>
+                              <TableHead>Unit</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell className="font-mono font-semibold">X</TableCell>
+                              <TableCell>Unknown resistance</TableCell>
+                              <TableCell>Ω</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-mono font-semibold">R</TableCell>
+                              <TableCell>Known value of resistance in the resistance box</TableCell>
+                              <TableCell>Ω</TableCell>
+                            </TableRow>
+                             <TableRow>
+                              <TableCell className="font-mono font-semibold">l₁, l₂</TableCell>
+                              <TableCell>Balancing lengths</TableCell>
+                              <TableCell>m</TableCell>
+                            </TableRow>
+                             <TableRow>
+                              <TableCell className="font-mono font-semibold">ρ</TableCell>
+                              <TableCell>Resistivity of the bridge wire</TableCell>
+                              <TableCell>Ω/m</TableCell>
+                            </TableRow>
+                             <TableRow>
+                              <TableCell className="font-mono font-semibold">r</TableCell>
+                              <TableCell>Radius of the given coil of wire</TableCell>
+                              <TableCell>m</TableCell>
+                            </TableRow>
+                             <TableRow>
+                              <TableCell className="font-mono font-semibold">L</TableCell>
+                              <TableCell>Length of the given wire</TableCell>
+                              <TableCell>m</TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
                     </div>
                 </CardContent>
                </Card>
