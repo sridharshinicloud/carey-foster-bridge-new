@@ -21,11 +21,7 @@ interface DataPanelProps {
   readings: Reading[];
   selectedReadingId: number | null;
   onSelectReading: (id: number | null) => void;
-  aiSuggestion: string;
-  isAiLoading: boolean;
-  onGetSuggestion: () => Promise<void>;
   onDeleteReading: (id: number) => void;
-  selectedReading: Reading | undefined;
   trueXValue: number;
   wireResistancePerCm: number;
   isTrueValueRevealed: boolean;
@@ -203,8 +199,8 @@ const DataPanel: React.FC<DataPanelProps> = ({
         <CardTitle className="font-headline">Analysis</CardTitle>
         <CardDescription>Review your data and get help.</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col">
-        <Tabs defaultValue="data" className="flex-grow flex flex-col">
+      <CardContent className="flex-grow flex flex-col p-0">
+            <Card className="h-full flex flex-col shadow-none border-0 rounded-t-none">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="data">Data Table</TabsTrigger>
             <TabsTrigger value="ai" disabled={experimentMode === 'findRho'}>AI Help</TabsTrigger>
