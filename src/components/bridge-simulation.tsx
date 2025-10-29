@@ -288,5 +288,3 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
 };
 
 export default BridgeSimulation;
-
-    
