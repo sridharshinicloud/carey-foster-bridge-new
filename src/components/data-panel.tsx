@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 
 interface DataPanelProps {
@@ -66,10 +67,12 @@ const DataPanel: React.FC<DataPanelProps> = ({
     onGetSuggestion();
   };
   
+  const completeReadings = useMemo(() => readings.filter(r => r.l1 !== null && r.l2 !== null), [readings]);
+  const canReveal = completeReadings.length >= 4;
+
   const { finalCalculatedX, calculationErrorX, deviationX } = useMemo(() => {
     if (experimentMode !== 'findX') return { finalCalculatedX: null, calculationErrorX: null, deviationX: null };
     
-    const completeReadings = readings.filter(r => r.l1 !== null && r.l2 !== null);
     if (completeReadings.length === 0) {
       return { finalCalculatedX: null, calculationErrorX: "Requires a complete reading (l1 & l2).", deviationX: null };
     }
@@ -82,12 +85,11 @@ const DataPanel: React.FC<DataPanelProps> = ({
     const deviation = trueXValue !== 0 ? ((averageX - trueXValue) / trueXValue) * 100 : 0;
 
     return { finalCalculatedX: averageX, calculationErrorX: null, deviationX: deviation };
-  }, [readings, wireResistancePerCm, trueXValue, experimentMode]);
+  }, [completeReadings, wireResistancePerCm, trueXValue, experimentMode]);
 
   const { finalCalculatedRho, calculationErrorRho, deviationRho } = useMemo(() => {
     if (experimentMode !== 'findRho') return { finalCalculatedRho: null, calculationErrorRho: null, deviationRho: null };
     
-    const completeReadings = readings.filter(r => r.l1 !== null && r.l2 !== null);
     if (completeReadings.length === 0) {
         return { finalCalculatedRho: null, calculationErrorRho: "Requires a complete reading (l1 & l2).", deviationRho: null };
     }
@@ -105,10 +107,30 @@ const DataPanel: React.FC<DataPanelProps> = ({
     const deviation = wireResistancePerCm !== 0 ? ((avgRho - wireResistancePerCm) / wireResistancePerCm) * 100 : 0;
 
     return { finalCalculatedRho: avgRho, calculationErrorRho: null, deviationRho: deviation };
-  }, [readings, experimentMode, wireResistancePerCm]);
+  }, [completeReadings, experimentMode, wireResistancePerCm]);
 
 
   const renderCalculationResults = () => {
+      const revealButton = (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="w-full mt-2">
+                 <Button onClick={onRevealToggle} variant="outline" size="sm" className="w-full" disabled={!canReveal}>
+                    {isTrueValueRevealed ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                    {isTrueValueRevealed ? 'Hide True Value' : 'Reveal True Value'}
+                </Button>
+              </div>
+            </TooltipTrigger>
+            {!canReveal && (
+               <TooltipContent>
+                 <p>Take at least 4 complete readings to reveal the true value.</p>
+               </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
+      );
+
       if (experimentMode === 'findX') {
         const isCalculated = finalCalculatedX !== null;
         return (
@@ -136,10 +158,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
                   <span className='font-mono'>? Ω</span>
                 )}
             </div>
-            <Button onClick={onRevealToggle} variant="outline" size="sm" className="w-full mt-2">
-                {isTrueValueRevealed ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                {isTrueValueRevealed ? 'Hide True Value' : 'Reveal True Value'}
-            </Button>
+            {revealButton}
           </>
         );
       }
@@ -170,10 +189,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
                       <span className='font-mono'>? Ω/cm</span>
                     )}
                 </div>
-                <Button onClick={onRevealToggle} variant="outline" size="sm" className="w-full mt-2">
-                    {isTrueValueRevealed ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                    {isTrueValueRevealed ? 'Hide True Value' : 'Reveal True Value'}
-                </Button>
+                {revealButton}
              </>
         )
       }
@@ -374,3 +390,5 @@ const DataPanel: React.FC<DataPanelProps> = ({
 };
 
 export default DataPanel;
+
+    
