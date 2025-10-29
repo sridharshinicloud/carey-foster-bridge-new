@@ -15,13 +15,14 @@ import type { ExperimentMode } from '@/app/page';
 interface ResistanceBoxProps {
     label: string;
     value: string | number;
+    description?: string;
     Icon: React.ElementType;
     position: 'left' | 'right' | 'inner-left' | 'inner-right';
 }
 
-const ResistanceBox: React.FC<ResistanceBoxProps> = ({ label, value, Icon, position }) => {
+const ResistanceBox: React.FC<ResistanceBoxProps> = ({ label, value, description, Icon, position }) => {
     return (
-        <div className={cn("flex flex-col items-center gap-1 w-24 text-center", 
+        <div className={cn("flex flex-col items-center gap-1 w-28 text-center",
             position === 'left' && 'absolute left-4 top-1/2 -translate-y-[calc(50%+2rem)]',
             position === 'right' && 'absolute right-4 top-1/2 -translate-y-[calc(50%+2rem)]',
             position === 'inner-left' && 'absolute left-1/2 -translate-x-[calc(100%+2rem)] top-8',
@@ -32,6 +33,7 @@ const ResistanceBox: React.FC<ResistanceBoxProps> = ({ label, value, Icon, posit
                 <Icon className="w-7 h-7 text-primary" />
             </div>
             <span className="text-sm font-semibold">{typeof value === 'number' ? `${value.toFixed(1)} Ω` : value}</span>
+            {description && <span className="text-xs text-muted-foreground">{description}</span>}
         </div>
     )
 }
@@ -110,17 +112,23 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
   let xBoxLabel = "?";
   let rBoxValue: string | number = "?";
   let xBoxValue: string | number = "?";
+  let rBoxDescription = "Unknown Resistance";
+  let xBoxDescription = "Known Resistance";
 
   if (experimentMode === 'findX') {
     rBoxLabel = isSwapped ? "X" : "R";
     xBoxLabel = isSwapped ? "R" : "X";
     rBoxValue = isSwapped ? '?' : knownR;
     xBoxValue = isSwapped ? knownR : '?';
+    rBoxDescription = isSwapped ? "Unknown Resistance" : "Known Resistance";
+    xBoxDescription = isSwapped ? "Known Resistance" : "Unknown Resistance";
   } else { // findRho
     rBoxLabel = isSwapped ? "Cu Strip" : "R";
     xBoxLabel = isSwapped ? "R" : "Cu Strip";
     rBoxValue = isSwapped ? '0.0 Ω' : knownR;
     xBoxValue = isSwapped ? knownR : '0.0 Ω';
+    rBoxDescription = isSwapped ? "Copper Strip" : "Known Resistance";
+    xBoxDescription = isSwapped ? "Known Resistance" : "Copper Strip";
   }
 
   const rIcon = (experimentMode === 'findX' && !isSwapped) || (experimentMode === 'findRho' && !isSwapped) ? Settings : HelpCircle;
@@ -187,10 +195,10 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
           <div className="relative aspect-[16/10] w-full rounded-lg bg-muted/30 border-2 border-dashed p-4 flex flex-col justify-end">
             
             {/* Resistors */}
-            <ResistanceBox label={rBoxLabel} value={rBoxValue} Icon={rIcon} position="left" />
-            <ResistanceBox label={xBoxLabel} value={xBoxValue} Icon={xIcon} position="right" />
-            <ResistanceBox label="P" value={P} Icon={Settings} position="inner-left" />
-            <ResistanceBox label="Q" value={Q} Icon={Settings} position="inner-right" />
+            <ResistanceBox label={rBoxLabel} value={rBoxValue} description={rBoxDescription} Icon={rIcon} position="left" />
+            <ResistanceBox label={xBoxLabel} value={xBoxValue} description={xBoxDescription} Icon={xIcon} position="right" />
+            <ResistanceBox label="P" value={P} description="Fixed Resistance" Icon={Settings} position="inner-left" />
+            <ResistanceBox label="Q" value={Q} description="Fixed Resistance" Icon={Settings} position="inner-right" />
             
              {/* Battery and Key - Visual only */}
             <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-1">
