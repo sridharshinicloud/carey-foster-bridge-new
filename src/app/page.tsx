@@ -2,9 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import type { SuggestResistanceValuesInput } from '@/ai/flows/suggest-resistance-values';
 import { useToast } from '@/hooks/use-toast';
-import { getAiSuggestion } from '@/app/actions';
 import BridgeSimulation from '@/components/bridge-simulation';
 import DataPanel from '@/components/data-panel';
 import { produce } from 'immer';
@@ -12,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -21,7 +18,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Zap, Info, FileText, BookOpen, Sigma } from 'lucide-react';
+import { Info, FileText, BookOpen, Sigma } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -56,8 +53,6 @@ export default function Home() {
     findRho: [],
   });
   const [selectedReadingId, setSelectedReadingId] = useState<number | null>(null);
-  const [aiSuggestion, setAiSuggestion] = useState('');
-  const [isAiLoading, setIsAiLoading] = useState(false);
   const [isSwapped, setIsSwapped] = useState(false);
   const [isTrueValueRevealed, setIsTrueValueRevealed] = useState(false);
   const [newTrueXInput, setNewTrueXInput] = useState(trueX.toString());
@@ -156,7 +151,6 @@ export default function Home() {
     setReadings({ findX: [], findRho: [] });
     setKnownR(5.0);
     setJockeyPos(50.0);
-    setAiSuggestion('');
     setSelectedReadingId(null);
     setIsSwapped(false);
     setIsTrueValueRevealed(false);
@@ -177,47 +171,9 @@ export default function Home() {
         }
         if (selectedReadingId === id) {
             setSelectedReadingId(null);
-            setAiSuggestion('');
         }
     }));
   }, [experimentMode, selectedReadingId]);
-
-  const currentReadings = readings[experimentMode];
-  const selectedReading = useMemo(() => currentReadings.find(r => r.id === selectedReadingId), [currentReadings, selectedReadingId]);
-
-  const calculatedXForAI = useMemo(() => {
-    if(!selectedReading || experimentMode !== 'findX' || selectedReading.l1 === null) return 0;
-    const { rValue, l1 } = selectedReading;
-    // This is an approximation for the AI, not the final calculation
-    const approxX = rValue + (2 * l1 - 100) * WIRE_RESISTANCE_PER_CM;
-    return approxX;
-  }, [selectedReading, WIRE_RESISTANCE_PER_CM, experimentMode]);
-
-  const handleGetSuggestion = useCallback(async () => {
-    if (!selectedReading || experimentMode === 'findRho' || selectedReading.l1 === null) return;
-
-    setIsAiLoading(true);
-    setAiSuggestion('');
-
-    const input: SuggestResistanceValuesInput = {
-        R: selectedReading.rValue,
-        l1: selectedReading.l1,
-        l2: 100 - selectedReading.l1, // Legacy l2 for prompt
-        X: parseFloat(calculatedXForAI.toFixed(2))
-    };
-
-    const result = await getAiSuggestion(input);
-    if (result.success && result.suggestion) {
-      setAiSuggestion(result.suggestion);
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'AI Suggestion Failed',
-        description: result.error || 'An unknown error occurred.',
-      });
-    }
-    setIsAiLoading(false);
-  }, [selectedReading, calculatedXForAI, toast, experimentMode]);
 
   const handleTrueXChange = () => {
     const newValue = parseFloat(newTrueXInput);
@@ -266,7 +222,6 @@ export default function Home() {
         setExperimentMode(newTab);
         setIsSwapped(false);
         setSelectedReadingId(null);
-        setAiSuggestion('');
     }
   }
 
@@ -494,11 +449,7 @@ export default function Home() {
                       readings={readings.findX}
                       selectedReadingId={selectedReadingId}
                       onSelectReading={setSelectedReadingId}
-                      aiSuggestion={aiSuggestion}
-                      isAiLoading={isAiLoading}
-                      onGetSuggestion={handleGetSuggestion}
                       onDeleteReading={handleDeleteReading}
-                      selectedReading={selectedReading}
                       trueXValue={trueX}
                       wireResistancePerCm={WIRE_RESISTANCE_PER_CM}
                       isTrueValueRevealed={isTrueValueRevealed}
@@ -535,11 +486,7 @@ export default function Home() {
                       readings={readings.findRho}
                       selectedReadingId={selectedReadingId}
                       onSelectReading={setSelectedReadingId}
-aiSuggestion={aiSuggestion}
-                      isAiLoading={isAiLoading}
-                      onGetSuggestion={handleGetSuggestion}
                       onDeleteReading={handleDeleteReading}
-                      selectedReading={selectedReading}
                       trueXValue={trueX}
                       wireResistancePerCm={WIRE_RESISTANCE_PER_CM}
                       isTrueValueRevealed={isTrueValueRevealed}
