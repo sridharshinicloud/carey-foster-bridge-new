@@ -37,7 +37,7 @@ export type Reading = {
 };
 
 export type ExperimentMode = 'findX' | 'findRho';
-export type TabMode = ExperimentMode | 'theory';
+export type TabMode = ExperimentMode | 'aim';
 
 export default function Home() {
   const [trueX, setTrueX] = useState(5.0);
@@ -58,7 +58,7 @@ export default function Home() {
   const [wireRadius, setWireRadius] = useState('');
   const [wireLength, setWireLength] = useState('');
   const [isValueLocked, setIsValueLocked] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabMode>('theory');
+  const [activeTab, setActiveTab] = useState<TabMode>('aim');
   const [experimentMode, setExperimentMode] = useState<ExperimentMode>('findX');
   const { toast } = useToast();
   const router = useRouter();
@@ -157,7 +157,7 @@ export default function Home() {
     setNewTrueXInput('5.0');
     setIsInstructionDialogOpen(true);
     setExperimentMode('findX');
-    setActiveTab('theory');
+    setActiveTab('aim');
   }, []);
 
   const handleDeleteReading = useCallback((id: number) => {
@@ -254,7 +254,7 @@ export default function Home() {
   const onTabChange = (value: string) => {
     const newTab = value as TabMode;
     setActiveTab(newTab);
-    if (newTab !== 'theory') {
+    if (newTab !== 'aim') {
         setExperimentMode(newTab);
         setIsSwapped(false);
         setSelectedReadingId(null);
@@ -373,11 +373,11 @@ export default function Home() {
       <main className="flex-grow container mx-auto p-4 md:p-8">
         <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="theory"><BookOpen className="mr-2 h-4 w-4"/>Theory</TabsTrigger>
+              <TabsTrigger value="aim"><BookOpen className="mr-2 h-4 w-4"/>Aim</TabsTrigger>
               <TabsTrigger value="findX">Find Unknown Resistance (X)</TabsTrigger>
               <TabsTrigger value="findRho">Find Resistance/Length (ρ)</TabsTrigger>
             </TabsList>
-            <TabsContent value="theory" className="mt-4">
+            <TabsContent value="aim" className="mt-4">
                <Card>
                 <CardHeader>
                     <CardTitle className="font-headline">Carey Foster's Bridge</CardTitle>
