@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Info, FileText, BookOpen, Sigma } from 'lucide-react';
+import { Info, FileText, BookOpen, Sigma } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -232,7 +233,7 @@ export default function Home() {
         <div className="container mx-auto px-4 flex items-center justify-between">
            <div className="flex items-center gap-3">
               <Image
-                src="https://picsum.photos/seed/snulogo/150/39"
+                src="/logoSNU.jpg"
                 alt="Logo"
                 width={150}
                 height={39}
