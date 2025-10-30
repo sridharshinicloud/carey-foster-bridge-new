@@ -123,12 +123,12 @@ const BridgeSimulation: React.FC<BridgeSimulationProps> = ({
     rBoxDescription = isSwapped ? "Unknown Resistance" : "Known Resistance";
     xBoxDescription = isSwapped ? "Known Resistance" : "Unknown Resistance";
   } else { // findRho
-    rBoxLabel = isSwapped ? "Cu Strip" : "R";
-    xBoxLabel = isSwapped ? "R" : "Cu Strip";
+    rBoxLabel = isSwapped ? "M. Strip" : "R";
+    xBoxLabel = isSwapped ? "R" : "M. Strip";
     rBoxValue = isSwapped ? '0.0 Ω' : knownR;
     xBoxValue = isSwapped ? knownR : '0.0 Ω';
-    rBoxDescription = isSwapped ? "Copper Strip" : "Known Resistance";
-    xBoxDescription = isSwapped ? "Known Resistance" : "Copper Strip";
+    rBoxDescription = isSwapped ? "Metallic Strip" : "Known Resistance";
+    xBoxDescription = isSwapped ? "Known Resistance" : "Metallic Strip";
   }
 
   const rIcon = (experimentMode === 'findX' && !isSwapped) || (experimentMode === 'findRho' && !isSwapped) ? Settings : HelpCircle;

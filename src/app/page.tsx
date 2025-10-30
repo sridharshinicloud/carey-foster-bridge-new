@@ -84,9 +84,9 @@ export default function Home() {
       rLeft = isSwapped ? trueX : knownR;
       rRight = isSwapped ? knownR : trueX;
     } else { // findRho
-      const copperStripResistance = 0.0;
-      rLeft = !isSwapped ? knownR : copperStripResistance;
-      rRight = !isSwapped ? copperStripResistance : knownR;
+      const metallicStripResistance = 0.0;
+      rLeft = !isSwapped ? knownR : metallicStripResistance;
+      rRight = !isSwapped ? metallicStripResistance : knownR;
     }
 
     const resistanceDifference = rRight - rLeft;
@@ -623,7 +623,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
-
-    
