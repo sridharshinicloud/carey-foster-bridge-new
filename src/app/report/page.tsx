@@ -289,6 +289,20 @@ const ReportPage = () => {
                 </div>
             </div>
 
+             <div className="pt-8 no-print">
+                <h2 className="text-xl font-bold mb-2">Viva Voce Questions</h2>
+                <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+                  <ol className="list-decimal list-outside pl-5 space-y-3 text-sm">
+                      <li>What is the principle of the Carey Foster's bridge?</li>
+                      <li>Why is this bridge so-named?</li>
+                      <li>What is the end resistance, and how is it eliminated in this experiment?</li>
+                      <li>Why should the balance point be obtained in the middle of the bridge wire?</li>
+                      <li>What is specific resistance? What is its unit?</li>
+                      <li>Why is the bridge not suitable for measuring very high or very low resistance?</li>
+                  </ol>
+                </div>
+            </div>
+
           </CardContent>
         </Card>
       </main>
@@ -314,5 +328,3 @@ const ReportPage = () => {
 };
 
 export default ReportPage;
-
-    
