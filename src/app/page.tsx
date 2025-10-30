@@ -57,12 +57,18 @@ export default function Home() {
   const [isTrueValueRevealed, setIsTrueValueRevealed] = useState(false);
   const [newTrueXInput, setNewTrueXInput] = useState(trueX.toString());
   const [isInstructionDialogOpen, setIsInstructionDialogOpen] = useState(true);
+  const [isStudentInfoDialogOpen, setIsStudentInfoDialogOpen] = useState(false);
   const [isReportInputDialogOpen, setIsReportInputDialogOpen] = useState(false);
   const [wireRadius, setWireRadius] = useState('');
   const [wireLength, setWireLength] = useState('');
   const [isValueLocked, setIsValueLocked] = useState(false);
   const [activeTab, setActiveTab] = useState<TabMode>('aim');
   const [experimentMode, setExperimentMode] = useState<ExperimentMode>('findX');
+  
+  const [studentName, setStudentName] = useState('');
+  const [rollNumber, setRollNumber] = useState('');
+  const [experimentDate, setExperimentDate] = useState(new Date().toISOString().split('T')[0]);
+
   const { toast } = useToast();
   const router = useRouter();
 
@@ -158,8 +164,12 @@ export default function Home() {
     setTrueX(5.0);
     setNewTrueXInput('5.0');
     setIsInstructionDialogOpen(true);
+    setIsStudentInfoDialogOpen(false);
     setExperimentMode('findX');
     setActiveTab('aim');
+    setStudentName('');
+    setRollNumber('');
+    setExperimentDate(new Date().toISOString().split('T')[0]);
   }, []);
 
   const handleDeleteReading = useCallback((id: number) => {
@@ -181,7 +191,7 @@ export default function Home() {
       setTrueX(newValue);
       setIsValueLocked(true);
       setIsInstructionDialogOpen(false);
-      setActiveTab('findX'); // Switch to experiment after setup
+      setIsStudentInfoDialogOpen(true);
     } else {
       toast({
         variant: 'destructive',
@@ -190,6 +200,19 @@ export default function Home() {
       });
     }
   };
+
+  const handleStudentInfoSubmit = () => {
+      if (!studentName.trim() || !rollNumber.trim()) {
+          toast({
+              variant: 'destructive',
+              title: 'Missing Information',
+              description: 'Please enter your name and roll number.',
+          });
+          return;
+      }
+      setIsStudentInfoDialogOpen(false);
+      setActiveTab('findX'); // Switch to experiment after setup
+  }
   
   const handleGenerateReport = () => {
     const radius = parseFloat(wireRadius);
@@ -210,6 +233,9 @@ export default function Home() {
       trueRho: WIRE_RESISTANCE_PER_CM,
       wireRadius: radius,
       wireLength: length,
+      studentName: studentName,
+      rollNumber: rollNumber,
+      experimentDate: experimentDate,
     });
     sessionStorage.setItem('reportData', reportData);
     router.push('/report');
@@ -232,7 +258,7 @@ export default function Home() {
         <div className="container mx-auto px-4 flex items-center justify-between">
            <div className="flex items-center gap-3">
               <Image
-                src="/logoSNU.jpg"
+                src="https://picsum.photos/seed/logo/150/39"
                 alt="Logo"
                 width={150}
                 height={39}
@@ -251,14 +277,14 @@ export default function Home() {
               <AlertDialogTrigger asChild>
                   <Button variant="outline" size="sm" disabled={isValueLocked}>
                     <Info className="mr-2 h-4 w-4"/>
-                    Instructor Information
+                    Instructor Setup
                   </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Set the Unknown Resistance (X)</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Use the field below to set the true value of the unknown resistance for the experiment. This value will be hidden from the student's view. This dialog cannot be opened again until the experiment is reset.
+                    Use the field below to set the true value of the unknown resistance for the experiment. This value will be hidden from the student's view.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="grid gap-4 py-4">
@@ -278,13 +304,63 @@ export default function Home() {
                   </div>
                 </div>
                 <AlertDialogFooter>
-                  <AlertDialogAction onClick={handleTrueXChange}>Set Value and Start</AlertDialogAction>
+                  <AlertDialogAction onClick={handleTrueXChange}>Set Value and Continue</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
            </div>
         </div>
       </header>
+
+      <Dialog open={isStudentInfoDialogOpen} onOpenChange={setIsStudentInfoDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Student Information</DialogTitle>
+            <DialogDescription>
+              Please enter your details for the experiment report.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="student-name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="student-name"
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="roll-number" className="text-right">
+                Roll Number
+              </Label>
+              <Input
+                id="roll-number"
+                value={rollNumber}
+                onChange={(e) => setRollNumber(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="experiment-date" className="text-right">
+                Date
+              </Label>
+              <Input
+                id="experiment-date"
+                type="date"
+                value={experimentDate}
+                onChange={(e) => setExperimentDate(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleStudentInfoSubmit}>Start Experiment</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isReportInputDialogOpen} onOpenChange={setIsReportInputDialogOpen}>
         <DialogContent>
@@ -506,3 +582,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

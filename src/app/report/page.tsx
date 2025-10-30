@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCap
 import { Badge } from '@/components/ui/badge';
 import { Printer, ArrowLeft } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { format } from 'date-fns';
 
 type AllReadings = {
   findX: Reading[];
@@ -21,6 +22,9 @@ type ReportData = {
   trueRho: number;
   wireRadius: number;
   wireLength: number;
+  studentName: string;
+  rollNumber: string;
+  experimentDate: string;
 };
 
 const ReportPage = () => {
@@ -213,10 +217,16 @@ const ReportPage = () => {
           <CardHeader>
             <CardTitle>Carey Foster Bridge Experiment Summary</CardTitle>
             <CardDescription>
-              A summary of the data collected and results calculated on {new Date().toLocaleDateString()}.
+              A summary of the data collected and results calculated.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm border-b pb-6">
+                <div><span className="font-semibold">Student Name: </span>{reportData.studentName}</div>
+                <div><span className="font-semibold">Roll Number: </span>{reportData.rollNumber}</div>
+                <div><span className="font-semibold">Date: </span>{format(new Date(reportData.experimentDate), "PPP")}</div>
+            </div>
+
             <div>
               <h2 className="text-xl font-bold mb-2">Experiment: Find Unknown Resistance (X)</h2>
               {renderReadingsTable(reportData.readings.findX, "Readings for determining unknown resistance X.", 'findX')}
@@ -304,3 +314,5 @@ const ReportPage = () => {
 };
 
 export default ReportPage;
+
+    
