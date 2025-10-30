@@ -18,7 +18,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Info, FileText, BookOpen, Sigma } from 'lucide-react';
+import { Info, FileText, BookOpen, Sigma, HelpCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -42,7 +42,7 @@ export type Reading = {
 };
 
 export type ExperimentMode = 'findX' | 'findRho';
-export type TabMode = ExperimentMode | 'aim' | 'formula';
+export type TabMode = ExperimentMode | 'aim' | 'formula' | 'instructions';
 
 export default function Home() {
   const [trueX, setTrueX] = useState(5.0);
@@ -211,7 +211,7 @@ export default function Home() {
           return;
       }
       setIsStudentInfoDialogOpen(false);
-      setActiveTab('findX'); // Switch to experiment after setup
+      setActiveTab('instructions'); // Switch to instructions after setup
   }
   
   const handleGenerateReport = () => {
@@ -411,8 +411,9 @@ export default function Home() {
       
       <main className="flex-grow container mx-auto p-4 md:p-8">
         <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="aim"><BookOpen className="mr-2 h-4 w-4"/>Aim</TabsTrigger>
+              <TabsTrigger value="instructions"><HelpCircle className="mr-2 h-4 w-4"/>Instructions</TabsTrigger>
               <TabsTrigger value="formula"><Sigma className="mr-2 h-4 w-4"/>Formula</TabsTrigger>
               <TabsTrigger value="findX">Find Unknown Resistance (X)</TabsTrigger>
               <TabsTrigger value="findRho">Find Resistance/Length (ρ)</TabsTrigger>
@@ -430,6 +431,46 @@ export default function Home() {
                     <div>
                         <h3 className="text-lg font-semibold mb-2">Apparatus Required</h3>
                         <p className="text-muted-foreground">Meter bridge, Leclanché cell, two equal resistances, variable resistance box, unknown resistance, wire, high resistance, switches, galvanometer, jockey.</p>
+                    </div>
+                </CardContent>
+               </Card>
+            </TabsContent>
+            <TabsContent value="instructions" className="mt-4">
+               <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">How to Use the Virtual Lab</CardTitle>
+                    <CardDescription>Follow these steps to perform the experiment.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm text-muted-foreground">
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                        <ol className="list-decimal list-outside pl-5 space-y-3">
+                            <li>
+                              <strong>Select Experiment:</strong> Choose either the "Find Unknown Resistance (X)" or "Find Resistance/Length (ρ)" tab to begin the respective experiment.
+                            </li>
+                            <li>
+                              <strong>Set Known Resistance (R):</strong> In the "Experiment Setup" panel, use the slider or the input box to set a value for the known resistance `R`.
+                            </li>
+                            <li>
+                              <strong>Find Balance Point (l₁):</strong>
+                              <ul className="list-disc list-outside pl-5 mt-2 space-y-1">
+                                  <li>Click and drag the jockey (the small slider on the wire) or use your keyboard's left/right arrow keys for precise movement.</li>
+                                  <li>Watch the Galvanometer. Your goal is to make the needle point to zero, which indicates the bridge is "Balanced".</li>
+                                  <li>When the Galvanometer shows 'Balanced', click the <Button size="sm" variant="secondary" className="inline-flex h-auto p-1 leading-none">Record Data</Button> button to save the balance length `l₁`.</li>
+                              </ul>
+                            </li>
+                            <li>
+                              <strong>Swap the Gaps:</strong> Click the <Button size="sm" variant="outline" className="inline-flex h-auto p-1 leading-none">Swap Gaps</Button> button. This will exchange the positions of the resistances in the gaps.
+                            </li>
+                             <li>
+                              <strong>Find New Balance Point (l₂):</strong> Repeat step 3 to find the new balance point and record the value `l₂`. The data table will now show a complete reading.
+                            </li>
+                            <li>
+                              <strong>Repeat for More Readings:</strong> Change the value of `R` and repeat steps 3-5 to take multiple readings. It's recommended to take at least 4 readings for an accurate result.
+                            </li>
+                            <li>
+                              <strong>Generate Report:</strong> Once you have collected enough data, click the <Button size="sm" variant="secondary" className="inline-flex h-auto p-1 leading-none">Generate Report</Button> button at the top of the page to view and print your results.
+                            </li>
+                        </ol>
                     </div>
                 </CardContent>
                </Card>
@@ -582,5 +623,7 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     
