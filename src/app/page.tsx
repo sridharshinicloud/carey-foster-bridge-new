@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 export type Reading = {
@@ -60,8 +61,12 @@ export default function Home() {
   const [isInstructionDialogOpen, setIsInstructionDialogOpen] = useState(true);
   const [isStudentInfoDialogOpen, setIsStudentInfoDialogOpen] = useState(false);
   const [isReportInputDialogOpen, setIsReportInputDialogOpen] = useState(false);
+  
   const [wireRadius, setWireRadius] = useState('');
+  const [wireRadiusUnit, setWireRadiusUnit] = useState('mm');
   const [wireLength, setWireLength] = useState('');
+  const [wireLengthUnit, setWireLengthUnit] = useState('m');
+
   const [isValueLocked, setIsValueLocked] = useState(false);
   const [activeTab, setActiveTab] = useState<TabMode>('aim');
   const [experimentMode, setExperimentMode] = useState<ExperimentMode>('findX');
@@ -222,10 +227,10 @@ export default function Home() {
   }
   
   const handleGenerateReport = () => {
-    const radius = parseFloat(wireRadius);
-    const length = parseFloat(wireLength);
+    const radiusValue = parseFloat(wireRadius);
+    const lengthValue = parseFloat(wireLength);
 
-    if (isNaN(radius) || radius <= 0 || isNaN(length) || length <= 0) {
+    if (isNaN(radiusValue) || radiusValue <= 0 || isNaN(lengthValue) || lengthValue <= 0) {
       toast({
         variant: 'destructive',
         title: 'Invalid Input',
@@ -234,12 +239,24 @@ export default function Home() {
       return;
     }
     
+    let radiusInMeters = radiusValue;
+    switch(wireRadiusUnit) {
+      case 'mm': radiusInMeters *= 1e-3; break;
+      case 'cm': radiusInMeters *= 1e-2; break;
+    }
+    
+    let lengthInMeters = lengthValue;
+    switch(wireLengthUnit) {
+      case 'cm': lengthInMeters /= 100; break;
+      case 'mm': lengthInMeters /= 1000; break;
+    }
+    
     const reportData = JSON.stringify({
       readings: readings,
       trueX: trueX,
       trueRho: wireResistancePerCm,
-      wireRadius: radius,
-      wireLength: length,
+      wireRadius: radiusInMeters,
+      wireLength: lengthInMeters,
       studentName: studentName,
       rollNumber: rollNumber,
       experimentDate: experimentDate,
@@ -389,8 +406,18 @@ export default function Home() {
                   value={wireRadius}
                   onChange={(e) => setWireRadius(e.target.value)}
                   placeholder="e.g., 0.2"
+                  className="flex-1"
                 />
-                <span>x10⁻³ m</span>
+                <Select value={wireRadiusUnit} onValueChange={setWireRadiusUnit}>
+                  <SelectTrigger className="w-[80px]">
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mm">mm</SelectItem>
+                    <SelectItem value="cm">cm</SelectItem>
+                    <SelectItem value="m">m</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -404,8 +431,18 @@ export default function Home() {
                   value={wireLength}
                   onChange={(e) => setWireLength(e.target.value)}
                   placeholder="e.g., 1.5"
+                  className="flex-1"
                 />
-                <span>m</span>
+                 <Select value={wireLengthUnit} onValueChange={setWireLengthUnit}>
+                  <SelectTrigger className="w-[80px]">
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="m">m</SelectItem>
+                    <SelectItem value="cm">cm</SelectItem>
+                    <SelectItem value="mm">mm</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -493,7 +530,7 @@ export default function Home() {
                       <div className="p-4 bg-muted/50 rounded-lg space-y-4 font-mono text-center">
                         <p className="flex items-center justify-center gap-2">
                            <span className='w-48 text-left'>(i) Resistance (X)</span>
-                           <span>X = R + (l₁ - l₂)ρ &nbsp; [Ω]</span>
+                           <span>X = R + (l₂ - l₁)ρ &nbsp; [Ω]</span>
                         </p>
                         <p className="flex items-center justify-center gap-2">
                            <span className='w-48 text-left'>(ii) Specific Resistance (S)</span>

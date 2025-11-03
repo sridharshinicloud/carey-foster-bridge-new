@@ -106,7 +106,7 @@ const ReportPage = () => {
 
   const specificResistanceS = useMemo(() => {
     if (!reportData || finalCalculatedX === null) return null;
-    const r_meters = reportData.wireRadius * 1e-3;
+    const r_meters = reportData.wireRadius;
     const L = reportData.wireLength;
     return (Math.PI * r_meters * r_meters * finalCalculatedX) / L;
   }, [reportData, finalCalculatedX]);
@@ -253,7 +253,7 @@ const ReportPage = () => {
                       <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
                             <span>(iii) Radius of the wire (r)</span>
-                            <span className="font-mono">{reportData.wireRadius.toFixed(2)} x10⁻³ m</span>
+                            <span className="font-mono">{(reportData.wireRadius * 1000).toFixed(2)} mm</span>
                           </div>
                           <div className="flex justify-between">
                             <span>(iv) Length of the wire (L)</span>
