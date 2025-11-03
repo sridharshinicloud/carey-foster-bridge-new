@@ -84,8 +84,8 @@ const ReportPage = () => {
 
     const calculatedRhos = findRhoReadings.map(reading => {
         const R = reading.rValue;
-        const l1_normal = reading.l1!;
-        const l2_swapped = reading.l2!;
+        const l1_normal = reading.l1! / 100; // convert to meters
+        const l2_swapped = reading.l2! / 100; // convert to meters
         
         if (l2_swapped - l1_normal !== 0) {
            return R / (l2_swapped - l1_normal);
@@ -98,7 +98,8 @@ const ReportPage = () => {
     }
 
     const averageRho = calculatedRhos.reduce((acc, val) => acc + val, 0) / calculatedRhos.length;
-    const deviation = reportData.trueRho !== 0 ? ((averageRho - reportData.trueRho) / reportData.trueRho) * 100 : 0;
+    const trueRhoMeters = reportData.trueRho * 100; // convert to Ω/m
+    const deviation = trueRhoMeters !== 0 ? ((averageRho - trueRhoMeters) / trueRhoMeters) * 100 : 0;
 
     return { finalCalculatedRho: averageRho, calculationErrorRho: null, deviationRho: deviation };
   }, [reportData]);
@@ -128,7 +129,7 @@ const ReportPage = () => {
             <TableHead>l₂ (cm)</TableHead>
             <TableHead>l₂-l₁ (cm)</TableHead>
             {mode === 'findX' && <TableHead>Calc. X (Ω)</TableHead>}
-            {mode === 'findRho' && <TableHead>ρ (Ω/cm)</TableHead>}
+            {mode === 'findRho' && <TableHead>ρ (Ω/m)</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -140,7 +141,8 @@ const ReportPage = () => {
             if (isComplete) {
               diff = reading.l2! - reading.l1!;
               if (mode === 'findRho') {
-                rho = diff !== 0 ? reading.rValue / diff : null;
+                const diffMeters = diff / 100;
+                rho = diffMeters !== 0 ? reading.rValue / diffMeters : null;
               }
               if (mode === 'findX') {
                 calculatedX = reading.rValue + reportData.trueRho * diff;
@@ -239,7 +241,7 @@ const ReportPage = () => {
               <h2 className="text-xl font-bold mb-2">Experiment: Find Resistance/Length (ρ)</h2>
               {renderReadingsTable(reportData.readings.findRho, "Readings for determining resistance per unit length ρ.", 'findRho')}
               <div className="mt-4">
-                {renderResults("Result for ρ", finalCalculatedRho, reportData.trueRho, calculationErrorRho, deviationRho, "Ω/cm")}
+                {renderResults("Result for ρ", finalCalculatedRho, reportData.trueRho * 100, calculationErrorRho, deviationRho, "Ω/m")}
               </div>
             </div>
             

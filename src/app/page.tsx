@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import BridgeSimulation from '@/components/bridge-simulation';
@@ -46,6 +46,7 @@ export type TabMode = ExperimentMode | 'aim' | 'formula' | 'instructions';
 
 export default function Home() {
   const [trueX, setTrueX] = useState(5.0);
+  const [wireResistancePerCm, setWireResistancePerCm] = useState(0.8);
   const [knownR, setKnownR] = useState(5.0);
   const [jockeyPos, setJockeyPos] = useState(50.0);
   const [readings, setReadings] = useState<{ findX: Reading[]; findRho: Reading[] }>({
@@ -74,8 +75,12 @@ export default function Home() {
 
   const P = 10; 
   const Q = 10; 
-  const WIRE_RESISTANCE_PER_CM = 0.02; // rho
   const SENSITIVITY_FACTOR = 0.005;
+  
+  useEffect(() => {
+    // Set a random resistivity value on component mount to avoid hydration mismatch
+    setWireResistancePerCm(Math.random() * (0.9 - 0.7) + 0.7);
+  }, []);
 
   const balancePoint = useMemo(() => {
     let rLeft, rRight;
@@ -90,9 +95,9 @@ export default function Home() {
     }
 
     const resistanceDifference = rRight - rLeft;
-    const balanceShift = resistanceDifference / (2 * WIRE_RESISTANCE_PER_CM);
+    const balanceShift = resistanceDifference / (2 * wireResistancePerCm);
     return 50 + balanceShift;
-  }, [isSwapped, knownR, experimentMode, WIRE_RESISTANCE_PER_CM, trueX]);
+  }, [isSwapped, knownR, experimentMode, wireResistancePerCm, trueX]);
 
   const potentialDifference = useMemo(() => {
     return (jockeyPos - balancePoint) * SENSITIVITY_FACTOR;
@@ -170,6 +175,8 @@ export default function Home() {
     setStudentName('');
     setRollNumber('');
     setExperimentDate(new Date().toISOString().split('T')[0]);
+    // Generate a new random value on reset
+    setWireResistancePerCm(Math.random() * (0.9 - 0.7) + 0.7);
   }, []);
 
   const handleDeleteReading = useCallback((id: number) => {
@@ -230,7 +237,7 @@ export default function Home() {
     const reportData = JSON.stringify({
       readings: readings,
       trueX: trueX,
-      trueRho: WIRE_RESISTANCE_PER_CM,
+      trueRho: wireResistancePerCm,
       wireRadius: radius,
       wireLength: length,
       studentName: studentName,
@@ -568,7 +575,7 @@ export default function Home() {
                       onSelectReading={setSelectedReadingId}
                       onDeleteReading={handleDeleteReading}
                       trueXValue={trueX}
-                      wireResistancePerCm={WIRE_RESISTANCE_PER_CM}
+                      wireResistancePerCm={wireResistancePerCm}
                       isTrueValueRevealed={isTrueValueRevealed}
                       onRevealToggle={() => setIsTrueValueRevealed(prev => !prev)}
                       experimentMode={experimentMode}
@@ -605,7 +612,7 @@ export default function Home() {
                       onSelectReading={setSelectedReadingId}
                       onDeleteReading={handleDeleteReading}
                       trueXValue={trueX}
-                      wireResistancePerCm={WIRE_RESISTANCE_PER_CM}
+                      wireResistancePerCm={wireResistancePerCm}
                       isTrueValueRevealed={isTrueValueRevealed}
                       onRevealToggle={() => setIsTrueValueRevealed(prev => !prev)}
                       experimentMode={experimentMode}
