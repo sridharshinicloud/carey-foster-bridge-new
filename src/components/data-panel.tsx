@@ -135,7 +135,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
                 <div className="font-semibold flex justify-between">
                     <span>Mean Calculated ρ:</span>
                     {isCalculated ? (
-                        <span className='font-mono'>{finalCalculatedRho.toFixed(4)} Ω/m</span>
+                        <span className='font-mono'>{finalCalculatedRho.toFixed(4)} Ωm</span>
                     ) : (
                         <span className="text-xs text-muted-foreground">{calculationErrorRho}</span>
                     )}
@@ -149,10 +149,10 @@ const DataPanel: React.FC<DataPanelProps> = ({
                               {deviationRho.toFixed(1)}% dev.
                             </Badge>
                           )}
-                          <span className='font-mono'>{trueRhoMeters.toFixed(4)} Ω/m</span>
+                          <span className='font-mono'>{trueRhoMeters.toFixed(4)} Ωm</span>
                       </div>
                     ) : (
-                      <span className='font-mono'>? Ω/m</span>
+                      <span className='font-mono'>? Ωm</span>
                     )}
                 </div>
                 {revealButton}
@@ -215,7 +215,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
                       {experimentMode === 'findRho' && (
                         <>
                           <TableHead>l₂-l₁ (cm)</TableHead>
-                          <TableHead>ρ (Ω/m)</TableHead>
+                          <TableHead>ρ (Ωm)</TableHead>
                         </>
                       )}
                       <TableHead className="text-right">Action</TableHead>

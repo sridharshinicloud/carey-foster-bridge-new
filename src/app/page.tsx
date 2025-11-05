@@ -568,7 +568,7 @@ export default function Home() {
                              <TableRow>
                               <TableCell className="font-mono font-semibold">ρ</TableCell>
                               <TableCell>Resistance per unit length of the bridge wire</TableCell>
-                              <TableCell>Ω/m</TableCell>
+                              <TableCell>Ωm</TableCell>
                             </TableRow>
                              <TableRow>
                               <TableCell className="font-mono font-semibold">r</TableCell>

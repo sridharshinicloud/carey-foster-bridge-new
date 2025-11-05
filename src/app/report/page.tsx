@@ -128,7 +128,7 @@ const ReportPage = () => {
             <TableHead>l₂ (cm)</TableHead>
             <TableHead>l₂-l₁ (cm)</TableHead>
             {mode === 'findX' && <TableHead>Calc. X (Ω)</TableHead>}
-            {mode === 'findRho' && <TableHead>ρ (Ω/m)</TableHead>}
+            {mode === 'findRho' && <TableHead>ρ (Ωm)</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -240,7 +240,7 @@ const ReportPage = () => {
               <h2 className="text-xl font-bold mb-2">Experiment: Find Resistance/Length (ρ)</h2>
               {renderReadingsTable(reportData.readings.findRho, "Readings for determining resistance per unit length ρ.", 'findRho')}
               <div className="mt-4">
-                {renderResults("Result for ρ", finalCalculatedRho, reportData.trueRho, calculationErrorRho, deviationRho, "Ω/m")}
+                {renderResults("Result for ρ", finalCalculatedRho, reportData.trueRho, calculationErrorRho, deviationRho, "Ωm")}
               </div>
             </div>
             
