@@ -59,8 +59,8 @@ const DataPanel: React.FC<DataPanelProps> = ({
     }
     
     const rhos = completeReadings.map(r => {
-        const diff = r.l2! - r.l1!;
-        return diff !== 0 ? r.rValue / diff : null;
+        const diffInMeters = (r.l2! - r.l1!) / 100; // convert cm to m
+        return diffInMeters !== 0 ? r.rValue / diffInMeters : null;
     }).filter((rho): rho is number => rho !== null);
 
     if (rhos.length === 0) {
@@ -68,7 +68,8 @@ const DataPanel: React.FC<DataPanelProps> = ({
     }
 
     const avgRho = rhos.reduce((a, b) => a + b, 0) / rhos.length;
-    const deviation = wireResistancePerCm !== 0 ? ((avgRho - wireResistancePerCm) / wireResistancePerCm) * 100 : 0;
+    const trueRhoInMeters = wireResistancePerCm * 100;
+    const deviation = trueRhoInMeters !== 0 ? ((avgRho - trueRhoInMeters) / trueRhoInMeters) * 100 : 0;
 
     return { finalCalculatedRho: avgRho, calculationErrorRho: null, deviationRho: deviation };
   }, [completeReadings, experimentMode, wireResistancePerCm]);
@@ -128,12 +129,13 @@ const DataPanel: React.FC<DataPanelProps> = ({
       }
       if (experimentMode === 'findRho') {
         const isCalculated = finalCalculatedRho !== null;
+        const trueRhoMeters = wireResistancePerCm * 100;
         return (
              <>
                 <div className="font-semibold flex justify-between">
                     <span>Mean Calculated ρ:</span>
                     {isCalculated ? (
-                        <span className='font-mono'>{finalCalculatedRho.toFixed(4)} Ω/cm</span>
+                        <span className='font-mono'>{finalCalculatedRho.toFixed(4)} Ω/m</span>
                     ) : (
                         <span className="text-xs text-muted-foreground">{calculationErrorRho}</span>
                     )}
@@ -147,10 +149,10 @@ const DataPanel: React.FC<DataPanelProps> = ({
                               {deviationRho.toFixed(1)}% dev.
                             </Badge>
                           )}
-                          <span className='font-mono'>{wireResistancePerCm.toFixed(4)} Ω/cm</span>
+                          <span className='font-mono'>{trueRhoMeters.toFixed(4)} Ω/m</span>
                       </div>
                     ) : (
-                      <span className='font-mono'>? Ω/cm</span>
+                      <span className='font-mono'>? Ω/m</span>
                     )}
                 </div>
                 {revealButton}
@@ -213,7 +215,7 @@ const DataPanel: React.FC<DataPanelProps> = ({
                       {experimentMode === 'findRho' && (
                         <>
                           <TableHead>l₂-l₁ (cm)</TableHead>
-                          <TableHead>ρ (Ω/cm)</TableHead>
+                          <TableHead>ρ (Ω/m)</TableHead>
                         </>
                       )}
                       <TableHead className="text-right">Action</TableHead>
@@ -229,7 +231,8 @@ const DataPanel: React.FC<DataPanelProps> = ({
                       if (isComplete) {
                         diff = reading.l2! - reading.l1!;
                         if (experimentMode === 'findRho') {
-                          rho = diff !== 0 ? reading.rValue / diff : null;
+                           const diffMeters = diff / 100;
+                           rho = diffMeters !== 0 ? reading.rValue / diffMeters : null;
                         }
                         if (experimentMode === 'findX') {
                           calculatedX = reading.rValue + wireResistancePerCm * diff;

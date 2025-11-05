@@ -531,7 +531,7 @@ export default function Home() {
                       <div className="p-4 bg-muted/50 rounded-lg space-y-4 font-mono text-center">
                         <p className="flex items-center justify-center gap-2">
                            <span className='w-48 text-left'>(i) Resistance (X)</span>
-                           <span>X = R + (l₂ - l₁)ρ &nbsp; [Ω]</span>
+                           <span>X = R + ρ(l₂ - l₁) &nbsp; [Ω]</span>
                         </p>
                         <p className="flex items-center justify-center gap-2">
                            <span className='w-48 text-left'>(ii) Specific Resistance (S)</span>
@@ -567,7 +567,7 @@ export default function Home() {
                             </TableRow>
                              <TableRow>
                               <TableCell className="font-mono font-semibold">ρ</TableCell>
-                              <TableCell>Resistivity of the bridge wire</TableCell>
+                              <TableCell>Resistance per unit length of the bridge wire</TableCell>
                               <TableCell>Ω/m</TableCell>
                             </TableRow>
                              <TableRow>
@@ -668,5 +668,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

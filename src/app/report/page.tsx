@@ -61,10 +61,9 @@ const ReportPage = () => {
     
     const calculatedXs = findXReadings.map(reading => {
       const R = reading.rValue;
-      const l1_normal = reading.l1!;
-      const l2_swapped = reading.l2!; // l2 is the balance point when swapped
-      // This is the correct formula for the Carey Foster Bridge for X
-      return R + (reportData.trueRho / 100) * (l2_swapped - l1_normal); // trueRho is in ohm/m, convert to ohm/cm
+      const l1_cm = reading.l1!;
+      const l2_cm = reading.l2!;
+      return R + (reportData.trueRho / 100) * (l2_cm - l1_cm); // trueRho is in ohm/m, convert to ohm/cm for calculation with cm
     });
     
     const averageX = calculatedXs.reduce((acc, val) => acc + val, 0) / calculatedXs.length;
@@ -84,11 +83,11 @@ const ReportPage = () => {
 
     const calculatedRhos = findRhoReadings.map(reading => {
         const R = reading.rValue;
-        const l1_normal = reading.l1! / 100; // convert to meters
-        const l2_swapped = reading.l2! / 100; // convert to meters
+        const l1_m = reading.l1! / 100; // convert to meters
+        const l2_m = reading.l2! / 100; // convert to meters
         
-        if (l2_swapped - l1_normal !== 0) {
-           return R / (l2_swapped - l1_normal);
+        if (l2_m - l1_m !== 0) {
+           return R / (l2_m - l1_m);
         }
         return null;
     }).filter((rho): rho is number => rho !== null);
@@ -108,7 +107,7 @@ const ReportPage = () => {
     if (!reportData || finalCalculatedX === null) return null;
     const r_meters = reportData.wireRadius;
     const L = reportData.wireLength;
-    return (Math.PI * r_meters * r_meters * finalCalculatedX) / L;
+    return (finalCalculatedX * Math.PI * r_meters * r_meters) / L;
   }, [reportData, finalCalculatedX]);
 
 
@@ -330,5 +329,3 @@ const ReportPage = () => {
 };
 
 export default ReportPage;
-
-    
