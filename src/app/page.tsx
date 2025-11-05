@@ -364,7 +364,7 @@ export default function Home() {
               <Input
                 id="roll-number"
                 value={rollNumber}
-                onChange={(e) => setRollNumber(e.target.value)}
+                onChange={(e) => setRollNumber(e.target.value.replace(/[^0-9]/g, ''))}
                 className="col-span-3"
               />
             </div>
