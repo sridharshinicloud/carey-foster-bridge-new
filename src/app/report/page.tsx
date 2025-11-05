@@ -64,7 +64,7 @@ const ReportPage = () => {
       const l1_normal = reading.l1!;
       const l2_swapped = reading.l2!; // l2 is the balance point when swapped
       // This is the correct formula for the Carey Foster Bridge for X
-      return R + reportData.trueRho * (l2_swapped - l1_normal);
+      return R + (reportData.trueRho / 100) * (l2_swapped - l1_normal); // trueRho is in ohm/m, convert to ohm/cm
     });
     
     const averageX = calculatedXs.reduce((acc, val) => acc + val, 0) / calculatedXs.length;
@@ -98,7 +98,7 @@ const ReportPage = () => {
     }
 
     const averageRho = calculatedRhos.reduce((acc, val) => acc + val, 0) / calculatedRhos.length;
-    const trueRhoMeters = reportData.trueRho * 100; // convert to Ω/m
+    const trueRhoMeters = reportData.trueRho; // This is already in Ω/m
     const deviation = trueRhoMeters !== 0 ? ((averageRho - trueRhoMeters) / trueRhoMeters) * 100 : 0;
 
     return { finalCalculatedRho: averageRho, calculationErrorRho: null, deviationRho: deviation };
@@ -145,7 +145,7 @@ const ReportPage = () => {
                 rho = diffMeters !== 0 ? reading.rValue / diffMeters : null;
               }
               if (mode === 'findX') {
-                calculatedX = reading.rValue + reportData.trueRho * diff;
+                calculatedX = reading.rValue + (reportData.trueRho / 100) * diff; // convert trueRho to ohm/cm
               }
             }
             return (
@@ -241,7 +241,7 @@ const ReportPage = () => {
               <h2 className="text-xl font-bold mb-2">Experiment: Find Resistance/Length (ρ)</h2>
               {renderReadingsTable(reportData.readings.findRho, "Readings for determining resistance per unit length ρ.", 'findRho')}
               <div className="mt-4">
-                {renderResults("Result for ρ", finalCalculatedRho, reportData.trueRho * 100, calculationErrorRho, deviationRho, "Ω/m")}
+                {renderResults("Result for ρ", finalCalculatedRho, reportData.trueRho, calculationErrorRho, deviationRho, "Ω/m")}
               </div>
             </div>
             
@@ -330,3 +330,5 @@ const ReportPage = () => {
 };
 
 export default ReportPage;
+
+    

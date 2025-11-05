@@ -47,7 +47,7 @@ export type TabMode = ExperimentMode | 'aim' | 'formula' | 'instructions';
 
 export default function Home() {
   const [trueX, setTrueX] = useState(5.0);
-  const [wireResistancePerCm, setWireResistancePerCm] = useState(0.8);
+  const [wireResistancePerCm, setWireResistancePerCm] = useState(0.008);
   const [knownR, setKnownR] = useState(5.0);
   const [jockeyPos, setJockeyPos] = useState(50.0);
   const [readings, setReadings] = useState<{ findX: Reading[]; findRho: Reading[] }>({
@@ -83,8 +83,9 @@ export default function Home() {
   const SENSITIVITY_FACTOR = 0.005;
   
   useEffect(() => {
-    // Set a random resistivity value on component mount to avoid hydration mismatch
-    setWireResistancePerCm(Math.random() * (0.9 - 0.7) + 0.7);
+    // Set a random resistivity value (in ohm/cm) on component mount to avoid hydration mismatch
+    // Range: 0.7 ohm/m to 0.9 ohm/m is 0.007 ohm/cm to 0.009 ohm/cm
+    setWireResistancePerCm(Math.random() * (0.009 - 0.007) + 0.007);
   }, []);
 
   const balancePoint = useMemo(() => {
@@ -181,7 +182,7 @@ export default function Home() {
     setRollNumber('');
     setExperimentDate(new Date().toISOString().split('T')[0]);
     // Generate a new random value on reset
-    setWireResistancePerCm(Math.random() * (0.9 - 0.7) + 0.7);
+    setWireResistancePerCm(Math.random() * (0.009 - 0.007) + 0.007);
   }, []);
 
   const handleDeleteReading = useCallback((id: number) => {
@@ -254,7 +255,7 @@ export default function Home() {
     const reportData = JSON.stringify({
       readings: readings,
       trueX: trueX,
-      trueRho: wireResistancePerCm,
+      trueRho: wireResistancePerCm * 100, // Convert from ohm/cm to ohm/m for the report
       wireRadius: radiusInMeters,
       wireLength: lengthInMeters,
       studentName: studentName,
@@ -667,3 +668,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
